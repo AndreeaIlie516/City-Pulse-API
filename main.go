@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type event struct {
@@ -82,12 +83,42 @@ func getEventModelById(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, eventModel)
 }
 
+func createPrivateEvent(c *gin.Context) {
+	var newEvent event
+
+	if err := c.Bind(&newEvent); err != nil {
+		return
+	}
+
+	newEvent.ID = strconv.Itoa(len(events) + 1)
+
+	events = append(events, newEvent)
+	eventModels = append(eventModels, eventModel{ID: newEvent.ID, Event: newEvent, IsFavorite: false, IsPrivate: true})
+	c.IndentedJSON(http.StatusCreated, newEvent)
+}
+
+func createPublicEvent(c *gin.Context) {
+	var newEvent event
+
+	if err := c.Bind(&newEvent); err != nil {
+		return
+	}
+
+	newEvent.ID = strconv.Itoa(len(events) + 1)
+
+	events = append(events, newEvent)
+	eventModels = append(eventModels, eventModel{ID: newEvent.ID, Event: newEvent, IsFavorite: false, IsPrivate: false})
+	c.IndentedJSON(http.StatusCreated, newEvent)
+}
+
 func main() {
 	router := gin.Default()
 	router.GET("/getEvents", getEvents)
 	router.GET("/getEventModels", getEventModels)
 	router.GET("/getEventById/:id", getEventById)
 	router.GET("/getEventModelById/:id", getEventModelById)
+	router.POST("/createPrivateEvent", createPrivateEvent)
+	router.POST("/createPublicEvent", createPublicEvent)
 	err := router.Run("localhost:8080")
 	if err != nil {
 		return
