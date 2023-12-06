@@ -1,8 +1,8 @@
 package entities
 
 type City struct {
-	ID          string
-	Name        string
-	Country     string
-	Description string
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Country     string `json:"country"`
+	Description string `json:"description"`
 }

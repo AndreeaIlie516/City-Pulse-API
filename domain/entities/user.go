@@ -1,12 +1,12 @@
 package entities
 
 type User struct {
-	ID          string
-	Username    string
-	Password    string
-	FirstName   string
-	LastName    string
-	Email       string
-	PhoneNumber string
-	Address     string
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phone_number"`
+	Address     string `json:"address"`
 }
