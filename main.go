@@ -136,6 +136,36 @@ func updateEvent(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, originalEvent)
 }
 
+func addEventToFavorites(c *gin.Context) {
+	id := c.Param("id")
+
+	eventModel, err := eventModelById(id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Event not found."})
+		return
+	}
+
+	eventModel.IsFavorite = true
+
+	c.IndentedJSON(http.StatusOK, eventModel)
+}
+
+func deleteEventFromFavorites(c *gin.Context) {
+	id := c.Param("id")
+
+	eventModel, err := eventModelById(id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Event not found."})
+		return
+	}
+
+	eventModel.IsFavorite = false
+
+	c.IndentedJSON(http.StatusOK, eventModel)
+}
+
 func main() {
 	router := gin.Default()
 	router.GET("/getEvents", getEvents)
@@ -145,6 +175,8 @@ func main() {
 	router.POST("/createPrivateEvent", createPrivateEvent)
 	router.POST("/createPublicEvent", createPublicEvent)
 	router.PUT("/updateEvent/:id", updateEvent)
+	router.PATCH("/addEventToFavorites/:id", addEventToFavorites)
+	router.PATCH("/deleteEventFromFavorites/:id", deleteEventFromFavorites)
 	err := router.Run("localhost:8080")
 	if err != nil {
 		return
