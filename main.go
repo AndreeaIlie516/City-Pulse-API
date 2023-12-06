@@ -16,7 +16,12 @@ func main() {
 	genreService := services.GenreService{Repo: genreRepository}
 	genreController := controllers.GenreController{Service: &genreService}
 
+	cityRepository := dataaccess.NewInMemoryCityRepository()
+	cityService := services.CityService{Repo: cityRepository}
+	cityController := controllers.CityController{Service: &cityService}
+
 	routes.RegisterGenreRoutes(router, &genreController)
+	routes.RegisterCityRoutes(router, &cityController)
 
 	err := router.Run("localhost:8080")
 	if err != nil {
