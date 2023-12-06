@@ -111,6 +111,31 @@ func createPublicEvent(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, newEvent)
 }
 
+func updateEvent(c *gin.Context) {
+	id := c.Param("id")
+
+	var updatedEvent event
+
+	if err := c.Bind(&updatedEvent); err != nil {
+		return
+	}
+
+	originalEvent, err := eventById(id)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "event not found!"})
+		return
+	}
+
+	originalEvent.Band = updatedEvent.Band
+	originalEvent.Description = updatedEvent.Description
+	originalEvent.Time = updatedEvent.Time
+	originalEvent.Location = updatedEvent.Location
+	originalEvent.ImageUrl = updatedEvent.ImageUrl
+
+	c.IndentedJSON(http.StatusOK, originalEvent)
+}
+
 func main() {
 	router := gin.Default()
 	router.GET("/getEvents", getEvents)
@@ -119,6 +144,7 @@ func main() {
 	router.GET("/getEventModelById/:id", getEventModelById)
 	router.POST("/createPrivateEvent", createPrivateEvent)
 	router.POST("/createPublicEvent", createPublicEvent)
+	router.PUT("/updateEvent/:id", updateEvent)
 	err := router.Run("localhost:8080")
 	if err != nil {
 		return
