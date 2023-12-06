@@ -31,6 +31,8 @@ var eventModels = []eventModel{
 	{ID: events[0].ID, Event: events[0], IsFavorite: false, IsPrivate: false},
 }
 
+var favoriteEvents []eventModel
+
 func getEvents(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, events)
 }
@@ -93,7 +95,8 @@ func createPrivateEvent(c *gin.Context) {
 	newEvent.ID = strconv.Itoa(len(events) + 1)
 
 	events = append(events, newEvent)
-	eventModels = append(eventModels, eventModel{ID: newEvent.ID, Event: newEvent, IsFavorite: false, IsPrivate: true})
+	eventModels = append(eventModels, eventModel{ID: newEvent.ID, Event: newEvent, IsFavorite: true, IsPrivate: true})
+	favoriteEvents = append(favoriteEvents, eventModel{ID: newEvent.ID, Event: newEvent, IsFavorite: true, IsPrivate: true})
 	c.IndentedJSON(http.StatusCreated, newEvent)
 }
 
@@ -109,6 +112,10 @@ func createPublicEvent(c *gin.Context) {
 	events = append(events, newEvent)
 	eventModels = append(eventModels, eventModel{ID: newEvent.ID, Event: newEvent, IsFavorite: false, IsPrivate: false})
 	c.IndentedJSON(http.StatusCreated, newEvent)
+}
+
+func getFavoriteEvents(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, favoriteEvents)
 }
 
 func updateEvent(c *gin.Context) {
@@ -139,16 +146,17 @@ func updateEvent(c *gin.Context) {
 func addEventToFavorites(c *gin.Context) {
 	id := c.Param("id")
 
-	eventModel, err := eventModelById(id)
+	eventM, err := eventModelById(id)
 
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Event not found."})
 		return
 	}
 
-	eventModel.IsFavorite = true
+	eventM.IsFavorite = true
+	favoriteEvents = append(favoriteEvents, eventModel{ID: eventM.ID, Event: eventM.Event, IsFavorite: eventM.IsFavorite, IsPrivate: eventM.IsPrivate})
 
-	c.IndentedJSON(http.StatusOK, eventModel)
+	c.IndentedJSON(http.StatusOK, eventM)
 }
 
 func deleteEventFromFavorites(c *gin.Context) {
@@ -163,7 +171,16 @@ func deleteEventFromFavorites(c *gin.Context) {
 
 	eventModel.IsFavorite = false
 
-	c.IndentedJSON(http.StatusOK, eventModel)
+	for i, e := range favoriteEvents {
+		if e.ID == id {
+			favoriteEvents = append(favoriteEvents[:i], favoriteEvents[i+1:]...)
+			c.IndentedJSON(http.StatusOK, eventModel)
+			return
+		}
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Event cannot be found in favorites."})
+
 }
 
 func main() {
@@ -175,6 +192,7 @@ func main() {
 	router.POST("/createPrivateEvent", createPrivateEvent)
 	router.POST("/createPublicEvent", createPublicEvent)
 	router.PUT("/updateEvent/:id", updateEvent)
+	router.GET("/getFavoriteEvents", getFavoriteEvents)
 	router.PATCH("/addEventToFavorites/:id", addEventToFavorites)
 	router.PATCH("/deleteEventFromFavorites/:id", deleteEventFromFavorites)
 	err := router.Run("localhost:8080")
