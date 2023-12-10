@@ -24,9 +24,14 @@ func main() {
 	userService := services.UserService{Repo: userRepository}
 	userController := controllers.UserController{Service: &userService}
 
+	artistRepository := dataaccess.NewInMemoryArtistRepository()
+	artistService := services.ArtistService{Repo: artistRepository}
+	artistController := controllers.ArtistController{Service: &artistService}
+
 	routes.RegisterGenreRoutes(router, &genreController)
 	routes.RegisterCityRoutes(router, &cityController)
 	routes.RegisterUserRoutes(router, &userController)
+	routes.RegisterArtistRoutes(router, &artistController)
 
 	err := router.Run("localhost:8080")
 	if err != nil {
