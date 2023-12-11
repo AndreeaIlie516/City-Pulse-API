@@ -15,6 +15,7 @@ func main() {
 	genreRepository := dataaccess.NewInMemoryGenreRepository()
 	artistRepository := dataaccess.NewInMemoryArtistRepository()
 	artistGenreRepository := dataaccess.NewInMemoryArtistGenreRepository()
+	eventRepository := dataaccess.NewInMemoryEventRepository()
 	cityRepository := dataaccess.NewInMemoryCityRepository()
 	locationRepository := dataaccess.NewInMemoryLocationRepository()
 	userRepository := dataaccess.NewInMemoryUserRepository()
@@ -22,6 +23,7 @@ func main() {
 	genreService := services.GenreService{Repo: genreRepository, ArtistGenreRepo: artistGenreRepository}
 	artistService := services.ArtistService{Repo: artistRepository, ArtistGenreRepo: artistGenreRepository}
 	artistGenreService := services.ArtistGenreService{Repo: artistGenreRepository, GenreRepo: genreRepository, ArtistRepo: artistRepository}
+	eventService := services.EventService{Repo: eventRepository, LocationRepo: locationRepository, CityRepo: cityRepository}
 	cityService := services.CityService{Repo: cityRepository, LocationRepo: locationRepository}
 	locationService := services.LocationService{Repo: locationRepository, CityRepo: cityRepository}
 	userService := services.UserService{Repo: userRepository}
@@ -29,6 +31,7 @@ func main() {
 	genreController := controllers.GenreController{Service: &genreService}
 	artistController := controllers.ArtistController{Service: &artistService}
 	artistGenreController := controllers.ArtistGenreController{Service: &artistGenreService}
+	eventController := controllers.EventController{Service: &eventService}
 	cityController := controllers.CityController{Service: &cityService}
 	locationController := controllers.LocationController{Service: &locationService}
 	userController := controllers.UserController{Service: &userService}
@@ -36,6 +39,7 @@ func main() {
 	routes.RegisterGenreRoutes(router, &genreController)
 	routes.RegisterArtistRoutes(router, &artistController)
 	routes.RegisterArtistGenreRoutes(router, &artistGenreController)
+	routes.RegisterEventRoutes(router, &eventController)
 	routes.RegisterCityRoutes(router, &cityController)
 	routes.RegisterLocationRoutes(router, &locationController)
 	routes.RegisterUserRoutes(router, &userController)

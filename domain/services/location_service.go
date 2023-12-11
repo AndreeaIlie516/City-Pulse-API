@@ -72,7 +72,12 @@ func (service *LocationService) LocationsByCityID(cityID string) (*LocationsByCi
 }
 
 func (service *LocationService) CreateLocation(location entities.Location) (entities.Location, error) {
-	location, err := service.Repo.CreateLocation(location)
+	_, err := service.CityRepo.CityByID(location.CityID)
+	if err != nil {
+		return entities.Location{}, err
+	}
+
+	location, err = service.Repo.CreateLocation(location)
 	if err != nil {
 		return entities.Location{}, err
 	}
