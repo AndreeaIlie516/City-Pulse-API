@@ -3,6 +3,6 @@ package entities
 type Location struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
-	City    City   `json:"city"`
+	CityID  string `json:"city_id"`
 	Address string `json:"address"`
 }

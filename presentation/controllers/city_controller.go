@@ -73,7 +73,7 @@ func (controller *CityController) UpdateCity(c *gin.Context) {
 	city, err := controller.Service.UpdateCity(id, updatedCity)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "city not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
