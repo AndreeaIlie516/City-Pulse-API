@@ -6,15 +6,10 @@ import (
 )
 
 type EventService struct {
-	Repo         repositories.EventRepository
-	LocationRepo repositories.LocationRepository
-	CityRepo     repositories.CityRepository
-}
-
-type EventDetails struct {
-	Event    entities.Event
-	Location entities.Location
-	City     entities.City
+	Repo            repositories.EventRepository
+	LocationRepo    repositories.LocationRepository
+	CityRepo        repositories.CityRepository
+	EventArtistRepo repositories.EventArtistRepository
 }
 
 func (service *EventService) AllEvents() ([]entities.Event, error) {
@@ -25,7 +20,7 @@ func (service *EventService) AllEvents() ([]entities.Event, error) {
 	return events, nil
 }
 
-func (service *EventService) EventByID(id string) (*EventDetails, error) {
+func (service *EventService) EventByID(id string) (*entities.EventDetails, error) {
 	event, err := service.Repo.EventByID(id)
 	if err != nil {
 		return nil, err
@@ -41,7 +36,7 @@ func (service *EventService) EventByID(id string) (*EventDetails, error) {
 		return nil, err
 	}
 
-	eventDetails := &EventDetails{
+	eventDetails := &entities.EventDetails{
 		Event:    *event,
 		Location: *location,
 		City:     *city,
@@ -63,6 +58,10 @@ func (service *EventService) CreateEvent(event entities.Event) (entities.Event, 
 }
 
 func (service *EventService) DeleteEvent(id string) (entities.Event, error) {
+	_, err := service.EventArtistRepo.DeleteEventFromItsArtists(id)
+	if err != nil {
+		return entities.Event{}, err
+	}
 	event, err := service.Repo.DeleteEvent(id)
 	if err != nil {
 		return entities.Event{}, err

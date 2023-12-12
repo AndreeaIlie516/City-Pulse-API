@@ -12,3 +12,9 @@ type Event struct {
 	Description   string `json:"description"`
 	Type          string `json:"type"`
 }
+
+type EventDetails struct {
+	Event    Event
+	Location Location
+	City     City
+}
