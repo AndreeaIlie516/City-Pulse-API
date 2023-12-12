@@ -2,8 +2,8 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
+	"City-Pulse-API/utils"
 	"errors"
-	"strconv"
 	"sync"
 )
 
@@ -20,6 +20,16 @@ func (r *InMemoryArtistGenreRepository) AllArtistGenreAssociations() ([]entities
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.artistGenreAssociations, nil
+}
+
+func (r *InMemoryArtistGenreRepository) AllArtistGenreAssociationIDs() []string {
+	var artistGenreAssociationIDs []string
+
+	for _, artistGenreAssociation := range r.artistGenreAssociations {
+		artistGenreAssociationIDs = append(artistGenreAssociationIDs, artistGenreAssociation.ID)
+	}
+
+	return artistGenreAssociationIDs
 }
 
 func (r *InMemoryArtistGenreRepository) ArtistGenreAssociationByID(id string) (*entities.ArtistGenre, error) {
@@ -82,7 +92,7 @@ func (r *InMemoryArtistGenreRepository) CreateArtistGenreAssociation(artistGenre
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	artistGenreAssociation.ID = strconv.Itoa(len(r.artistGenreAssociations) + 1)
+	artistGenreAssociation.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllArtistGenreAssociationIDs())
 	r.artistGenreAssociations = append(r.artistGenreAssociations, artistGenreAssociation)
 	return artistGenreAssociation, nil
 }

@@ -4,6 +4,7 @@ import "City-Pulse-API/domain/entities"
 
 type EventArtistRepository interface {
 	AllEventArtistAssociations() ([]entities.EventArtist, error)
+	AllEventArtistAssociationIDs() []string
 	EventArtistAssociationByID(id string) (*entities.EventArtist, error)
 	EventArtistAssociation(artistID string, genreID string) (*entities.EventArtist, error)
 	ArtistIDsForEvent(eventID string) ([]string, error)

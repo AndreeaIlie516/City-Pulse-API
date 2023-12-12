@@ -2,8 +2,8 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
+	"City-Pulse-API/utils"
 	"errors"
-	"strconv"
 	"sync"
 )
 
@@ -20,6 +20,16 @@ func (r *InMemoryEventRepository) AllEvents() ([]entities.Event, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.events, nil
+}
+
+func (r *InMemoryEventRepository) AllEventIDs() []string {
+	var eventIDs []string
+
+	for _, event := range r.events {
+		eventIDs = append(eventIDs, event.ID)
+	}
+
+	return eventIDs
 }
 
 func (r *InMemoryEventRepository) EventByID(id string) (*entities.Event, error) {
@@ -53,7 +63,7 @@ func (r *InMemoryEventRepository) EventIDsForLocation(locationID string) ([]stri
 func (r *InMemoryEventRepository) CreateEvent(event entities.Event) (entities.Event, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	event.ID = strconv.Itoa(len(r.events) + 1)
+	event.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllEventIDs())
 	r.events = append(r.events, event)
 	return event, nil
 }

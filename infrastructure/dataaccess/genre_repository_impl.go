@@ -2,8 +2,8 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
+	"City-Pulse-API/utils"
 	"errors"
-	"strconv"
 	"sync"
 )
 
@@ -22,6 +22,16 @@ func (r *InMemoryGenreRepository) AllGenres() ([]entities.Genre, error) {
 	return r.genres, nil
 }
 
+func (r *InMemoryGenreRepository) AllGenreIDs() []string {
+	var genreIDs []string
+
+	for _, genre := range r.genres {
+		genreIDs = append(genreIDs, genre.ID)
+	}
+
+	return genreIDs
+}
+
 func (r *InMemoryGenreRepository) GenreByID(id string) (*entities.Genre, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -38,7 +48,7 @@ func (r *InMemoryGenreRepository) GenreByID(id string) (*entities.Genre, error) 
 func (r *InMemoryGenreRepository) CreateGenre(genre entities.Genre) (entities.Genre, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	genre.ID = strconv.Itoa(len(r.genres) + 1)
+	genre.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllGenreIDs())
 	r.genres = append(r.genres, genre)
 	return genre, nil
 }

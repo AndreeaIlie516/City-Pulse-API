@@ -2,8 +2,8 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
+	"City-Pulse-API/utils"
 	"errors"
-	"strconv"
 	"sync"
 )
 
@@ -22,6 +22,16 @@ func (r *InMemoryCityRepository) AllCities() ([]entities.City, error) {
 	return r.cities, nil
 }
 
+func (r *InMemoryCityRepository) AllCityIDs() []string {
+	var cityIDs []string
+
+	for _, city := range r.cities {
+		cityIDs = append(cityIDs, city.ID)
+	}
+
+	return cityIDs
+}
+
 func (r *InMemoryCityRepository) CityByID(id string) (*entities.City, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -38,7 +48,7 @@ func (r *InMemoryCityRepository) CityByID(id string) (*entities.City, error) {
 func (r *InMemoryCityRepository) CreateCity(city entities.City) (entities.City, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	city.ID = strconv.Itoa(len(r.cities) + 1)
+	city.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllCityIDs())
 	r.cities = append(r.cities, city)
 	return city, nil
 }
