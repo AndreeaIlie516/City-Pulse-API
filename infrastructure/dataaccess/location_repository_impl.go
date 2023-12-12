@@ -51,14 +51,18 @@ func (r *InMemoryLocationRepository) LocationIDsForCity(cityID string) ([]string
 }
 
 func (r *InMemoryLocationRepository) CreateLocation(location entities.Location) (entities.Location, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	location.ID = strconv.Itoa(len(r.locations) + 1)
 	r.locations = append(r.locations, location)
 	return location, nil
 }
 
 func (r *InMemoryLocationRepository) DeleteLocation(id string) (entities.Location, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for i, location := range r.locations {
 		if location.ID == id {
 			r.locations = append(r.locations[:i], r.locations[i+1:]...)
@@ -71,6 +75,7 @@ func (r *InMemoryLocationRepository) DeleteLocation(id string) (entities.Locatio
 func (r *InMemoryLocationRepository) UpdateLocation(id string, updatedLocation entities.Location) (entities.Location, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	for i, location := range r.locations {
 		if location.ID == id {
 			r.locations[i] = updatedLocation

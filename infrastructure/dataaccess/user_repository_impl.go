@@ -36,14 +36,18 @@ func (r *InMemoryUserRepository) UserByID(id string) (*entities.User, error) {
 }
 
 func (r *InMemoryUserRepository) CreateUser(user entities.User) (entities.User, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	user.ID = strconv.Itoa(len(r.users) + 1)
 	r.users = append(r.users, user)
 	return user, nil
 }
 
 func (r *InMemoryUserRepository) DeleteUser(id string) (entities.User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for i, user := range r.users {
 		if user.ID == id {
 			r.users = append(r.users[:i], r.users[i+1:]...)
@@ -56,6 +60,7 @@ func (r *InMemoryUserRepository) DeleteUser(id string) (entities.User, error) {
 func (r *InMemoryUserRepository) UpdateUser(id string, updatedUser entities.User) (entities.User, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	for i, user := range r.users {
 		if user.ID == id {
 			r.users[i] = updatedUser

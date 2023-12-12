@@ -36,14 +36,17 @@ func (r *InMemoryArtistRepository) ArtistByID(id string) (*entities.Artist, erro
 }
 
 func (r *InMemoryArtistRepository) CreateArtist(artist entities.Artist) (entities.Artist, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	artist.ID = strconv.Itoa(len(r.artists) + 1)
 	r.artists = append(r.artists, artist)
 	return artist, nil
 }
 
 func (r *InMemoryArtistRepository) DeleteArtist(id string) (entities.Artist, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for i, artist := range r.artists {
 		if artist.ID == id {
 			r.artists = append(r.artists[:i], r.artists[i+1:]...)

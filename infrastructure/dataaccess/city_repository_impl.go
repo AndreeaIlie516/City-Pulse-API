@@ -36,14 +36,17 @@ func (r *InMemoryCityRepository) CityByID(id string) (*entities.City, error) {
 }
 
 func (r *InMemoryCityRepository) CreateCity(city entities.City) (entities.City, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	city.ID = strconv.Itoa(len(r.cities) + 1)
 	r.cities = append(r.cities, city)
 	return city, nil
 }
 
 func (r *InMemoryCityRepository) DeleteCity(id string) (entities.City, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for i, city := range r.cities {
 		if city.ID == id {
 			r.cities = append(r.cities[:i], r.cities[i+1:]...)
@@ -56,6 +59,7 @@ func (r *InMemoryCityRepository) DeleteCity(id string) (entities.City, error) {
 func (r *InMemoryCityRepository) UpdateCity(id string, updatedCity entities.City) (entities.City, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	for i, city := range r.cities {
 		if city.ID == id {
 			r.cities[i] = updatedCity

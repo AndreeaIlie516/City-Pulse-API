@@ -50,20 +50,18 @@ func (r *InMemoryEventRepository) EventIDsForLocation(locationID string) ([]stri
 	return eventIDs, nil
 }
 
-func (r *InMemoryEventRepository) EventIDsForCity(cityID string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (r *InMemoryEventRepository) CreateEvent(event entities.Event) (entities.Event, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	event.ID = strconv.Itoa(len(r.events) + 1)
 	r.events = append(r.events, event)
 	return event, nil
 }
 
 func (r *InMemoryEventRepository) DeleteEvent(id string) (entities.Event, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for i, event := range r.events {
 		if event.ID == id {
 			r.events = append(r.events[:i], r.events[i+1:]...)
@@ -76,6 +74,7 @@ func (r *InMemoryEventRepository) DeleteEvent(id string) (entities.Event, error)
 func (r *InMemoryEventRepository) UpdateEvent(id string, updatedEvent entities.Event) (entities.Event, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	for i, event := range r.events {
 		if event.ID == id {
 			r.events[i] = updatedEvent

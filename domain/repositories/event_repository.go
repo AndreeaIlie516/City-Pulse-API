@@ -6,7 +6,6 @@ type EventRepository interface {
 	AllEvents() ([]entities.Event, error)
 	EventByID(id string) (*entities.Event, error)
 	EventIDsForLocation(locationID string) ([]string, error)
-	EventIDsForCity(cityID string) ([]string, error)
 	CreateEvent(city entities.Event) (entities.Event, error)
 	UpdateEvent(id string, city entities.Event) (entities.Event, error)
 	DeleteEvent(id string) (entities.Event, error)

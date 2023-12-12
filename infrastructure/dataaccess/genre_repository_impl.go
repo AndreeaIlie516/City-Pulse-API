@@ -36,14 +36,17 @@ func (r *InMemoryGenreRepository) GenreByID(id string) (*entities.Genre, error) 
 }
 
 func (r *InMemoryGenreRepository) CreateGenre(genre entities.Genre) (entities.Genre, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	genre.ID = strconv.Itoa(len(r.genres) + 1)
 	r.genres = append(r.genres, genre)
 	return genre, nil
 }
 
 func (r *InMemoryGenreRepository) DeleteGenre(id string) (entities.Genre, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	for i, genre := range r.genres {
 		if genre.ID == id {
 			r.genres = append(r.genres[:i], r.genres[i+1:]...)
@@ -56,6 +59,7 @@ func (r *InMemoryGenreRepository) DeleteGenre(id string) (entities.Genre, error)
 func (r *InMemoryGenreRepository) UpdateGenre(id string, updatedGenre entities.Genre) (entities.Genre, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	for i, genre := range r.genres {
 		if genre.ID == id {
 			r.genres[i].Name = updatedGenre.Name
