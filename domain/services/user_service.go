@@ -3,6 +3,8 @@ package services
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/repositories"
+	"fmt"
+	"errors"
 )
 
 type UserService struct {
@@ -17,7 +19,13 @@ func (service *UserService) AllUsers() ([]entities.User, error) {
 	return users, nil
 }
 
-func (service *UserService) UserByID(id string) (*entities.User, error) {
+func (service *UserService) UserByID(idStr string) (*entities.User, error) {
+	var id uint
+    if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+        return nil, errors.New("invalid ID format")
+    }
+
+	
 	user, err := service.Repo.UserByID(id)
 	if err != nil {
 		return nil, err
@@ -33,7 +41,13 @@ func (service *UserService) CreateUser(user entities.User) (entities.User, error
 	return user, nil
 }
 
-func (service *UserService) DeleteUser(id string) (entities.User, error) {
+func (service *UserService) DeleteUser(idStr string) (entities.User, error) {
+	var id uint
+    if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+        return entities.User{}, errors.New("invalid ID format")
+    }
+
+	
 	user, err := service.Repo.DeleteUser(id)
 	if err != nil {
 		return entities.User{}, err
@@ -41,7 +55,13 @@ func (service *UserService) DeleteUser(id string) (entities.User, error) {
 	return user, nil
 }
 
-func (service *UserService) UpdateUser(id string, user entities.User) (entities.User, error) {
+func (service *UserService) UpdateUser(idStr string, user entities.User) (entities.User, error) {
+	var id uint
+    if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+        return entities.User{}, errors.New("invalid ID format")
+    }
+
+	
 	user, err := service.Repo.UpdateUser(id, user)
 	if err != nil {
 		return entities.User{}, err

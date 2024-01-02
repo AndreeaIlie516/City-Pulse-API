@@ -1,12 +1,16 @@
 package entities
 
+import (
+	"gorm.io/gorm"
+)
+
 type User struct {
-	ID          string `json:"id"`
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phone_number"`
-	Address     string `json:"address"`
+    gorm.Model
+    Username    string `gorm:"column:username;unique;not null" json:"username" validate:"required,alphanum,min=3,max=25"`
+    Password    string `gorm:"column:password;not null" json:"password" validate:"required,min=8"`
+    FirstName   string `gorm:"column:first_name;not null" json:"first_name" validate:"required,alpha,min=3"`
+    LastName    string `gorm:"column:last_name;not null" json:"last_name" validate:"required,alpha,min=3"`
+    Email       string `gorm:"column:email;unique;not null" json:"email" validate:"required,email"`
+    PhoneNumber string `gorm:"column:phone_number;unique;not null" json:"phone_number" validate:"required,e164"`
+    Address     string `gorm:"column:address" json:"address" validate:"max=100"`
 }

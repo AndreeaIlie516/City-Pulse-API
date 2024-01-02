@@ -1,16 +1,32 @@
 package main
 
 import (
+	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
 	"City-Pulse-API/infrastructure/dataaccess"
 	"City-Pulse-API/presentation/controllers"
 	"City-Pulse-API/routes"
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/postgres"
+    "gorm.io/gorm"
 	"log"
 )
 
 func main() {
 	router := gin.Default()
+
+	dsn := "host=localhost user=postgres password=postgres dbname=CityPulse port=5433 sslmode=disable TimeZone=Europe/Bucharest"
+    
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Fatalf("Failed to connect to database: %s", err.Error())
+    }
+
+	err = db.AutoMigrate(&entities.User{})
+    if err != nil {
+        log.Fatalf("Failed to migrate database: %v", err)
+    }
 
 	genreRepository := dataaccess.NewInMemoryGenreRepository()
 	artistRepository := dataaccess.NewInMemoryArtistRepository()
@@ -19,7 +35,7 @@ func main() {
 	eventArtistRepository := dataaccess.NewInMemoryEventArtistRepository()
 	cityRepository := dataaccess.NewInMemoryCityRepository()
 	locationRepository := dataaccess.NewInMemoryLocationRepository()
-	userRepository := dataaccess.NewInMemoryUserRepository()
+	userRepository := dataaccess.NewGormUserRepository(db)
 
 	genreService := services.GenreService{Repo: genreRepository, ArtistGenreRepo: artistGenreRepository}
 	artistService := services.ArtistService{Repo: artistRepository, ArtistGenreRepo: artistGenreRepository, EventArtistRepo: eventArtistRepository}
@@ -48,7 +64,7 @@ func main() {
 	routes.RegisterLocationRoutes(router, &locationController)
 	routes.RegisterUserRoutes(router, &userController)
 
-	err := router.Run("localhost:8080")
+	err = router.Run("localhost:8080")
 	if err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 		return

@@ -2,82 +2,88 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"City-Pulse-API/utils"
+	"gorm.io/gorm"
 	"errors"
-	"sync"
 )
 
-type InMemoryUserRepository struct {
-	users []entities.User
-	mu    sync.RWMutex
+type GormUserRepository struct {
+	Db *gorm.DB
 }
 
-func NewInMemoryUserRepository() *InMemoryUserRepository {
-	return &InMemoryUserRepository{}
+func NewGormUserRepository(db *gorm.DB) *GormUserRepository {
+    return &GormUserRepository{Db: db}
 }
 
-func (r *InMemoryUserRepository) AllUsers() ([]entities.User, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.users, nil
+func (r *GormUserRepository) AllUsers() ([]entities.User, error) {
+	var users []entities.User
+	result := r.Db.Find(&users)
+	return users, result.Error
 }
 
-func (r *InMemoryUserRepository) AllUserIDs() []string {
-	var userIDs []string
+func (r *GormUserRepository) AllUserIDs() ([]uint, error) {
+	var users []entities.User
+	var userIDs []uint
 
-	for _, user := range r.users {
+	if err := r.Db.Model(&entities.User{}).Select("ID").Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
 		userIDs = append(userIDs, user.ID)
 	}
 
-	return userIDs
+	return userIDs, nil
 }
 
-func (r *InMemoryUserRepository) UserByID(id string) (*entities.User, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	for i, user := range r.users {
-		if user.ID == id {
-			return &r.users[i], nil
+func (r *GormUserRepository) UserByID(id uint) (*entities.User, error) {
+	var user entities.User
+	if err:=r.Db.First(&user, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("user not found")
+	return &user, nil
 }
 
-func (r *InMemoryUserRepository) CreateUser(user entities.User) (entities.User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	user.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllUserIDs())
-	r.users = append(r.users, user)
+func (r *GormUserRepository) CreateUser(user entities.User) (entities.User, error) {
+	if err := r.Db.Create(&user).Error; err != nil {
+		return entities.User{}, err
+	}
 	return user, nil
 }
 
-func (r *InMemoryUserRepository) DeleteUser(id string) (entities.User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormUserRepository) DeleteUser(id uint) (entities.User, error) {
+	var user entities.User
 
-	for i, user := range r.users {
-		if user.ID == id {
-			r.users = append(r.users[:i], r.users[i+1:]...)
-			return user, nil
-		}
-	}
-	return entities.User{}, errors.New("user not found")
+    if err := r.Db.First(&user, "ID = ?", id).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return entities.User{}, errors.New("user not found")
+        }
+        return entities.User{}, err
+    }
+
+    if err := r.Db.Delete(&user).Error; err != nil {
+        return entities.User{}, err
+    }
+
+    return user, nil
 }
 
-func (r *InMemoryUserRepository) UpdateUser(id string, updatedUser entities.User) (entities.User, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormUserRepository) UpdateUser(id uint, updatedUser entities.User) (entities.User, error) {
+	var user entities.User
 
-	for i, user := range r.users {
-		if user.ID == id {
-			r.users[i] = updatedUser
-			r.users[i].ID = id
-			return r.users[i], nil
-		}
-	}
+    if err := r.Db.First(&user, "ID = ?", id).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return entities.User{}, errors.New("user not found")
+        }
+        return entities.User{}, err
+    }
 
-	return entities.User{}, errors.New("user not found")
+    if err := r.Db.Model(&user).Updates(updatedUser).Error; err != nil {
+        return entities.User{}, err
+    }
+
+    return user, nil
 }
