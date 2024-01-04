@@ -3,8 +3,11 @@ package controllers
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
-	"github.com/gin-gonic/gin"
+	"errors"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type EventArtistController struct {
@@ -24,7 +27,11 @@ func (controller *EventArtistController) EventArtistAssociationByID(c *gin.Conte
 	id := c.Param("id")
 	eventArtistAssociation, err := controller.Service.EventArtistAssociationByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "event artist association not found"})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event artist association not found"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, eventArtistAssociation)
@@ -41,7 +48,11 @@ func (controller *EventArtistController) EventArtistAssociation(c *gin.Context) 
 
 	eventArtistAssociation, err := controller.Service.EventArtistAssociation(eventID, artistID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "event artist association not found"})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event artist association not found"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, eventArtistAssociation)
@@ -51,7 +62,11 @@ func (controller *EventArtistController) EventWithArtists(c *gin.Context) {
 	eventID := c.Param("eventId")
 	eventWithArtists, err := controller.Service.EventWithArtists(eventID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, eventWithArtists)
@@ -61,7 +76,11 @@ func (controller *EventArtistController) ArtistWithEvents(c *gin.Context) {
 	artistID := c.Param("artistId")
 	artistWithEvents, err := controller.Service.ArtistWithEvents(artistID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "artist id not found"})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "artist id not found"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, artistWithEvents)
@@ -72,6 +91,31 @@ func (controller *EventArtistController) CreateEventArtistAssociation(c *gin.Con
 
 	if err := c.BindJSON(&newEventArtistAssociation); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validate := validator.New()
+
+	err := validate.Struct(newEventArtistAssociation)
+
+	if err != nil {
+
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
+			return
+		}
+
+		var errorMessages []string
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := "Validation error on field '" + err.Field() + "': " + err.ActualTag()
+			if err.Param() != "" {
+				errorMessage += " (Parameter: " + err.Param() + ")"
+			}
+			errorMessages = append(errorMessages, errorMessage)
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errorMessages})
 		return
 	}
 
@@ -104,6 +148,31 @@ func (controller *EventArtistController) UpdateEventArtistAssociation(c *gin.Con
 
 	if err := c.BindJSON(&updatedEventArtistAssociation); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validate := validator.New()
+
+	err := validate.Struct(updatedEventArtistAssociation)
+
+	if err != nil {
+
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
+			return
+		}
+
+		var errorMessages []string
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := "Validation error on field '" + err.Field() + "': " + err.ActualTag()
+			if err.Param() != "" {
+				errorMessage += " (Parameter: " + err.Param() + ")"
+			}
+			errorMessages = append(errorMessages, errorMessage)
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errorMessages})
 		return
 	}
 

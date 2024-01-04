@@ -3,8 +3,11 @@ package controllers
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
-	"github.com/gin-gonic/gin"
+	"errors"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type ArtistController struct {
@@ -24,7 +27,11 @@ func (controller *ArtistController) ArtistByID(c *gin.Context) {
 	id := c.Param("id")
 	artist, err := controller.Service.ArtistByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "artist not found"})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "artist not found"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, artist)
@@ -35,6 +42,31 @@ func (controller *ArtistController) CreateArtist(c *gin.Context) {
 
 	if err := c.BindJSON(&newArtist); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validate := validator.New()
+
+	err := validate.Struct(newArtist)
+
+	if err != nil {
+
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
+			return
+		}
+
+		var errorMessages []string
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := "Validation error on field '" + err.Field() + "': " + err.ActualTag()
+			if err.Param() != "" {
+				errorMessage += " (Parameter: " + err.Param() + ")"
+			}
+			errorMessages = append(errorMessages, errorMessage)
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errorMessages})
 		return
 	}
 
@@ -53,7 +85,11 @@ func (controller *ArtistController) DeleteArtist(c *gin.Context) {
 	artist, err := controller.Service.DeleteArtist(id)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "artist not found"})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "artist not found"})
+		}
 		return
 	}
 
@@ -67,6 +103,31 @@ func (controller *ArtistController) UpdateArtist(c *gin.Context) {
 
 	if err := c.BindJSON(&updatedArtist); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validate := validator.New()
+
+	err := validate.Struct(updatedArtist)
+
+	if err != nil {
+
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
+			return
+		}
+
+		var errorMessages []string
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := "Validation error on field '" + err.Field() + "': " + err.ActualTag()
+			if err.Param() != "" {
+				errorMessage += " (Parameter: " + err.Param() + ")"
+			}
+			errorMessages = append(errorMessages, errorMessage)
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errorMessages})
 		return
 	}
 

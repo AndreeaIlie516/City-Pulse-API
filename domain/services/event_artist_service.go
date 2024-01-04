@@ -3,6 +3,8 @@ package services
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/repositories"
+	"errors"
+	"fmt"
 )
 
 type EventArtistService struct {
@@ -37,7 +39,12 @@ func (service *EventArtistService) AllEventArtistAssociations() ([]entities.Even
 	return eventArtistAssociations, nil
 }
 
-func (service *EventArtistService) EventArtistAssociationByID(id string) (*EventArtistDetail, error) {
+func (service *EventArtistService) EventArtistAssociationByID(idStr string) (*EventArtistDetail, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	eventArtistAssociation, err := service.Repo.EventArtistAssociationByID(id)
 	if err != nil {
 		return nil, err
@@ -61,10 +68,20 @@ func (service *EventArtistService) EventArtistAssociationByID(id string) (*Event
 	return eventArtistDetail, nil
 }
 
-func (service *EventArtistService) EventArtistAssociation(eventID string, artistID string) (*EventArtistDetail, error) {
+func (service *EventArtistService) EventArtistAssociation(eventIDStr string, artistIDStr string) (*EventArtistDetail, error) {
+	var eventID uint
+	if _, err := fmt.Sscanf(eventIDStr, "%d", &eventID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	event, err := service.EventRepo.EventByID(eventID)
 	if err != nil {
 		return nil, err
+	}
+
+	var artistID uint
+	if _, err := fmt.Sscanf(artistIDStr, "%d", &artistID); err != nil {
+		return nil, errors.New("invalid ID format")
 	}
 
 	artist, err := service.ArtistRepo.ArtistByID(artistID)
@@ -85,7 +102,12 @@ func (service *EventArtistService) EventArtistAssociation(eventID string, artist
 	return eventArtistDetail, nil
 }
 
-func (service *EventArtistService) EventWithArtists(eventID string) (*EventWithArtists, error) {
+func (service *EventArtistService) EventWithArtists(eventIDStr string) (*EventWithArtists, error) {
+	var eventID uint
+	if _, err := fmt.Sscanf(eventIDStr, "%d", &eventID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	event, err := service.EventRepo.EventByID(eventID)
 	if err != nil {
 		return &EventWithArtists{}, err
@@ -110,7 +132,12 @@ func (service *EventArtistService) EventWithArtists(eventID string) (*EventWithA
 	return eventWithArtists, nil
 }
 
-func (service *EventArtistService) ArtistWithEvents(artistID string) (*ArtistWithEvents, error) {
+func (service *EventArtistService) ArtistWithEvents(artistIDStr string) (*ArtistWithEvents, error) {
+	var artistID uint
+	if _, err := fmt.Sscanf(artistIDStr, "%d", &artistID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	artist, err := service.ArtistRepo.ArtistByID(artistID)
 	if err != nil {
 		return &ArtistWithEvents{}, err
@@ -153,7 +180,12 @@ func (service *EventArtistService) CreateEventArtistAssociation(eventArtistAssoc
 	return eventArtistAssociation, nil
 }
 
-func (service *EventArtistService) DeleteEventArtistAssociation(id string) (entities.EventArtist, error) {
+func (service *EventArtistService) DeleteEventArtistAssociation(idStr string) (entities.EventArtist, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.EventArtist{}, errors.New("invalid ID format")
+	}
+
 	eventArtistAssociation, err := service.Repo.DeleteEventArtistAssociation(id)
 	if err != nil {
 		return entities.EventArtist{}, err
@@ -161,7 +193,12 @@ func (service *EventArtistService) DeleteEventArtistAssociation(id string) (enti
 	return eventArtistAssociation, nil
 }
 
-func (service *EventArtistService) DeleteArtistFromItsEvents(artistID string) ([]entities.EventArtist, error) {
+func (service *EventArtistService) DeleteArtistFromItsEvents(artistIDStr string) ([]entities.EventArtist, error) {
+	var artistID uint
+	if _, err := fmt.Sscanf(artistIDStr, "%d", &artistID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	_, err := service.ArtistRepo.ArtistByID(artistID)
 	if err != nil {
 		return []entities.EventArtist{}, err
@@ -174,7 +211,12 @@ func (service *EventArtistService) DeleteArtistFromItsEvents(artistID string) ([
 	return artistEventAssociation, nil
 }
 
-func (service *EventArtistService) DeleteEventFromItsArtists(eventID string) ([]entities.EventArtist, error) {
+func (service *EventArtistService) DeleteEventFromItsArtists(eventIDStr string) ([]entities.EventArtist, error) {
+	var eventID uint
+	if _, err := fmt.Sscanf(eventIDStr, "%d", &eventID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	_, err := service.EventRepo.EventByID(eventID)
 	if err != nil {
 		return []entities.EventArtist{}, err
@@ -187,7 +229,12 @@ func (service *EventArtistService) DeleteEventFromItsArtists(eventID string) ([]
 	return eventArtistAssociation, nil
 }
 
-func (service *EventArtistService) UpdateEventArtistAssociation(id string, eventArtistAssociation entities.EventArtist) (entities.EventArtist, error) {
+func (service *EventArtistService) UpdateEventArtistAssociation(idStr string, eventArtistAssociation entities.EventArtist) (entities.EventArtist, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.EventArtist{}, errors.New("invalid ID format")
+	}
+
 	eventArtistAssociation, err := service.Repo.UpdateEventArtistAssociation(id, eventArtistAssociation)
 	if err != nil {
 		return entities.EventArtist{}, err

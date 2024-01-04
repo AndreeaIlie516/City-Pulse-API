@@ -1,7 +1,11 @@
 package entities
 
+import (
+	"gorm.io/gorm"
+)
+
 type Genre struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	gorm.Model
+	Name        string `gorm:"column:name;unique;not null" json:"name" validate:"required,min=3,max=30"`
+	Description string `gorm:"column:description" json:"description" validate:"max=256"`
 }

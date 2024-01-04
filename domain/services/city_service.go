@@ -4,6 +4,7 @@ import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/repositories"
 	"errors"
+	"fmt"
 )
 
 type CityService struct {
@@ -19,7 +20,12 @@ func (service *CityService) AllCities() ([]entities.City, error) {
 	return cities, nil
 }
 
-func (service *CityService) CityByID(id string) (*entities.City, error) {
+func (service *CityService) CityByID(idStr string) (*entities.City, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	city, err := service.Repo.CityByID(id)
 	if err != nil {
 		return nil, err
@@ -35,7 +41,12 @@ func (service *CityService) CreateCity(city entities.City) (entities.City, error
 	return city, nil
 }
 
-func (service *CityService) DeleteCity(id string) (entities.City, error) {
+func (service *CityService) DeleteCity(idStr string) (entities.City, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.City{}, errors.New("invalid ID format")
+	}
+
 	locations, err := service.LocationRepo.LocationIDsForCity(id)
 	if err != nil {
 		return entities.City{}, err
@@ -51,7 +62,12 @@ func (service *CityService) DeleteCity(id string) (entities.City, error) {
 	return city, nil
 }
 
-func (service *CityService) UpdateCity(id string, city entities.City) (entities.City, error) {
+func (service *CityService) UpdateCity(idStr string, city entities.City) (entities.City, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.City{}, errors.New("invalid ID format")
+	}
+
 	city, err := service.Repo.UpdateCity(id, city)
 	if err != nil {
 		return entities.City{}, err

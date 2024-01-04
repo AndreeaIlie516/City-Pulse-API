@@ -1,9 +1,13 @@
 package entities
 
+import (
+	"gorm.io/gorm"
+)
+
 type Artist struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	IsBand      bool   `json:"is_band"`
-	BandMembers string `json:"band_members"`
-	Description string `json:"description"`
+	gorm.Model
+	Name        string `gorm:"column:name;unique;not null" json:"name" validate:"required,min=3,max=30"`
+	IsBand      bool   `gorm:"column:name;not null" json:"is_band" validate:"required,boolean"`
+	BandMembers string `gorm:"column:band_members" json:"band_members" validate:"required,max=100"`
+	Description string `gorm:"column:description" json:"description" validate:"max=256"`
 }

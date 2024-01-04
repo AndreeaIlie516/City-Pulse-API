@@ -4,10 +4,10 @@ import "City-Pulse-API/domain/entities"
 
 type LocationRepository interface {
 	AllLocations() ([]entities.Location, error)
-	LocationByID(id string) (*entities.Location, error)
-	AllLocationIDs() []string
-	LocationIDsForCity(cityID string) ([]string, error)
-	CreateLocation(city entities.Location) (entities.Location, error)
-	UpdateLocation(id string, location entities.Location) (entities.Location, error)
-	DeleteLocation(id string) (entities.Location, error)
+	AllLocationIDs() ([]uint, error)
+	LocationByID(id uint) (*entities.Location, error)
+	LocationIDsForCity(cityID uint) ([]uint, error)
+	CreateLocation(location entities.Location) (entities.Location, error)
+	UpdateLocation(id uint, updatedLocation entities.Location) (entities.Location, error)
+	DeleteLocation(id uint) (entities.Location, error)
 }

@@ -3,8 +3,10 @@ package controllers
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
-	"github.com/gin-gonic/gin"
+	"errors"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -25,13 +27,13 @@ func (controller *UserController) UserByID(c *gin.Context) {
 	id := c.Param("id")
 	user, err := controller.Service.UserByID(id)
 	if err != nil {
-        if err.Error() == "invalid ID format" {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
-        } else {
-            c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-        }
-        return
-    }
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		}
+		return
+	}
 	c.JSON(http.StatusOK, user)
 }
 
@@ -49,7 +51,8 @@ func (controller *UserController) CreateUser(c *gin.Context) {
 
 	if err != nil {
 
-		if _, ok := err.(*validator.InvalidValidationError); ok {
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
 			return
 		}
@@ -95,7 +98,11 @@ func (controller *UserController) UpdateUser(c *gin.Context) {
 	var updatedUser entities.User
 
 	if err := c.BindJSON(&updatedUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
@@ -105,7 +112,8 @@ func (controller *UserController) UpdateUser(c *gin.Context) {
 
 	if err != nil {
 
-		if _, ok := err.(*validator.InvalidValidationError); ok {
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
 			return
 		}

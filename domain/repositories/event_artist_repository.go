@@ -4,14 +4,14 @@ import "City-Pulse-API/domain/entities"
 
 type EventArtistRepository interface {
 	AllEventArtistAssociations() ([]entities.EventArtist, error)
-	AllEventArtistAssociationIDs() []string
-	EventArtistAssociationByID(id string) (*entities.EventArtist, error)
-	EventArtistAssociation(artistID string, genreID string) (*entities.EventArtist, error)
-	ArtistIDsForEvent(eventID string) ([]string, error)
-	EventIDsForArtist(artistID string) ([]string, error)
+	AllEventArtistAssociationIDs() ([]uint, error)
+	EventArtistAssociationByID(id uint) (*entities.EventArtist, error)
+	EventArtistAssociation(artistID uint, genreID uint) (*entities.EventArtist, error)
+	ArtistIDsForEvent(eventID uint) ([]uint, error)
+	EventIDsForArtist(artistID uint) ([]uint, error)
 	CreateEventArtistAssociation(eventArtistAssociation entities.EventArtist) (entities.EventArtist, error)
-	UpdateEventArtistAssociation(id string, updatedEventArtistAssociation entities.EventArtist) (entities.EventArtist, error)
-	DeleteEventArtistAssociation(id string) (entities.EventArtist, error)
-	DeleteArtistFromItsEvents(artistID string) ([]entities.EventArtist, error)
-	DeleteEventFromItsArtists(eventID string) ([]entities.EventArtist, error)
+	UpdateEventArtistAssociation(id uint, updatedEventArtistAssociation entities.EventArtist) (entities.EventArtist, error)
+	DeleteEventArtistAssociation(id uint) (entities.EventArtist, error)
+	DeleteArtistFromItsEvents(artistID uint) ([]entities.EventArtist, error)
+	DeleteEventFromItsArtists(eventID uint) ([]entities.EventArtist, error)
 }

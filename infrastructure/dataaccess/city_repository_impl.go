@@ -2,81 +2,85 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"City-Pulse-API/utils"
 	"errors"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
-type InMemoryCityRepository struct {
-	cities []entities.City
-	mu     sync.RWMutex
+type GormCityRepository struct {
+	Db *gorm.DB
 }
 
-func NewInMemoryCityRepository() *InMemoryCityRepository {
-	return &InMemoryCityRepository{}
+func NewGormCityRepository(db *gorm.DB) *GormCityRepository {
+	return &GormCityRepository{Db: db}
 }
 
-func (r *InMemoryCityRepository) AllCities() ([]entities.City, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.cities, nil
+func (r *GormCityRepository) AllCities() ([]entities.City, error) {
+	var cities []entities.City
+	result := r.Db.Find(&cities)
+	return cities, result.Error
 }
 
-func (r *InMemoryCityRepository) AllCityIDs() []string {
-	var cityIDs []string
+func (r *GormCityRepository) AllCityIDs() ([]uint, error) {
+	var cityIDs []uint
 
-	for _, city := range r.cities {
-		cityIDs = append(cityIDs, city.ID)
+	if err := r.Db.Model(&entities.City{}).Select("ID").Find(&cityIDs).Error; err != nil {
+		return nil, err
 	}
 
-	return cityIDs
+	return cityIDs, nil
 }
 
-func (r *InMemoryCityRepository) CityByID(id string) (*entities.City, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormCityRepository) CityByID(id uint) (*entities.City, error) {
+	var city entities.City
 
-	for i, city := range r.cities {
-		if city.ID == id {
-			return &r.cities[i], nil
+	if err := r.Db.First(&city, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("city not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("city not found")
+	return &city, nil
 }
 
-func (r *InMemoryCityRepository) CreateCity(city entities.City) (entities.City, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	city.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllCityIDs())
-	r.cities = append(r.cities, city)
+func (r *GormCityRepository) CreateCity(city entities.City) (entities.City, error) {
+	if err := r.Db.Create(&city).Error; err != nil {
+		return entities.City{}, err
+	}
 	return city, nil
 }
 
-func (r *InMemoryCityRepository) DeleteCity(id string) (entities.City, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormCityRepository) DeleteCity(id uint) (entities.City, error) {
+	var city entities.City
 
-	for i, city := range r.cities {
-		if city.ID == id {
-			r.cities = append(r.cities[:i], r.cities[i+1:]...)
-			return city, nil
+	if err := r.Db.First(&city, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.City{}, errors.New("city not found")
 		}
+		return entities.City{}, err
 	}
-	return entities.City{}, errors.New("city not found")
+
+	if err := r.Db.Delete(&city).Error; err != nil {
+		return entities.City{}, err
+	}
+
+	return city, nil
 }
 
-func (r *InMemoryCityRepository) UpdateCity(id string, updatedCity entities.City) (entities.City, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormCityRepository) UpdateCity(id uint, updatedCity entities.City) (entities.City, error) {
+	var city entities.City
 
-	for i, city := range r.cities {
-		if city.ID == id {
-			r.cities[i] = updatedCity
-			r.cities[i].ID = id
-			return r.cities[i], nil
+	if err := r.Db.First(&city, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.City{}, errors.New("city not found")
 		}
+		return entities.City{}, err
 	}
 
-	return entities.City{}, errors.New("city not found")
+	if err := r.Db.Model(&city).Updates(updatedCity).Error; err != nil {
+		return entities.City{}, err
+	}
+
+	return city, nil
 }

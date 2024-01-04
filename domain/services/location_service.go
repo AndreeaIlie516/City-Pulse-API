@@ -3,6 +3,8 @@ package services
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/repositories"
+	"errors"
+	"fmt"
 )
 
 type LocationService struct {
@@ -28,7 +30,12 @@ func (service *LocationService) AllLocations() ([]entities.Location, error) {
 	return locations, nil
 }
 
-func (service *LocationService) LocationByID(id string) (*LocationDetails, error) {
+func (service *LocationService) LocationByID(idStr string) (*LocationDetails, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	location, err := service.Repo.LocationByID(id)
 	if err != nil {
 		return nil, err
@@ -46,7 +53,12 @@ func (service *LocationService) LocationByID(id string) (*LocationDetails, error
 	return locationDetails, nil
 }
 
-func (service *LocationService) LocationsByCityID(cityID string) (*LocationsByCity, error) {
+func (service *LocationService) LocationsByCityID(cityIDStr string) (*LocationsByCity, error) {
+	var cityID uint
+	if _, err := fmt.Sscanf(cityIDStr, "%d", &cityID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	city, err := service.CityRepo.CityByID(cityID)
 	if err != nil {
 		return &LocationsByCity{}, err
@@ -84,7 +96,12 @@ func (service *LocationService) CreateLocation(location entities.Location) (enti
 	return location, nil
 }
 
-func (service *LocationService) DeleteLocation(id string) (entities.Location, error) {
+func (service *LocationService) DeleteLocation(idStr string) (entities.Location, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Location{}, errors.New("invalid ID format")
+	}
+
 	location, err := service.Repo.DeleteLocation(id)
 	if err != nil {
 		return entities.Location{}, err
@@ -92,7 +109,12 @@ func (service *LocationService) DeleteLocation(id string) (entities.Location, er
 	return location, nil
 }
 
-func (service *LocationService) UpdateLocation(id string, location entities.Location) (entities.Location, error) {
+func (service *LocationService) UpdateLocation(idStr string, location entities.Location) (entities.Location, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Location{}, errors.New("invalid ID format")
+	}
+
 	location, err := service.Repo.UpdateLocation(id, location)
 	if err != nil {
 		return entities.Location{}, err

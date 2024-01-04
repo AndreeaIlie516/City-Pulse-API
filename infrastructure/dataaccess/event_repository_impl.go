@@ -2,96 +2,95 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"City-Pulse-API/utils"
 	"errors"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
-type InMemoryEventRepository struct {
-	events []entities.Event
-	mu     sync.RWMutex
+type GormEventRepository struct {
+	Db *gorm.DB
 }
 
-func NewInMemoryEventRepository() *InMemoryEventRepository {
-	return &InMemoryEventRepository{}
+func NewGormEventRepository(db *gorm.DB) *GormEventRepository {
+	return &GormEventRepository{Db: db}
 }
 
-func (r *InMemoryEventRepository) AllEvents() ([]entities.Event, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.events, nil
+func (r *GormEventRepository) AllEvents() ([]entities.Event, error) {
+	var events []entities.Event
+	result := r.Db.Find(&events)
+	return events, result.Error
 }
 
-func (r *InMemoryEventRepository) AllEventIDs() []string {
-	var eventIDs []string
+func (r *GormEventRepository) AllEventIDs() ([]uint, error) {
+	var eventIDs []uint
 
-	for _, event := range r.events {
-		eventIDs = append(eventIDs, event.ID)
-	}
-
-	return eventIDs
-}
-
-func (r *InMemoryEventRepository) EventByID(id string) (*entities.Event, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	for i, event := range r.events {
-		if event.ID == id {
-			return &r.events[i], nil
-		}
-	}
-
-	return nil, errors.New("event not found")
-}
-
-func (r *InMemoryEventRepository) EventIDsForLocation(locationID string) ([]string, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	var eventIDs []string
-
-	for _, event := range r.events {
-		if event.LocationID == locationID {
-			eventIDs = append(eventIDs, event.ID)
-		}
+	if err := r.Db.Model(&entities.Event{}).Select("ID").Find(&eventIDs).Error; err != nil {
+		return nil, err
 	}
 
 	return eventIDs, nil
 }
 
-func (r *InMemoryEventRepository) CreateEvent(event entities.Event) (entities.Event, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	event.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllEventIDs())
-	r.events = append(r.events, event)
+func (r *GormEventRepository) EventByID(id uint) (*entities.Event, error) {
+	var event entities.Event
+
+	if err := r.Db.First(&event, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("event not found")
+		}
+		return nil, err
+	}
+
+	return &event, nil
+}
+
+func (r *GormEventRepository) EventIDsForLocation(locationID uint) ([]uint, error) {
+	var eventIDs []uint
+
+	if err := r.Db.Where("location_id = ?", locationID).Model(&entities.Event{}).Select("ID").Find(&eventIDs).Error; err != nil {
+		return nil, err
+	}
+
+	return eventIDs, nil
+}
+
+func (r *GormEventRepository) CreateEvent(event entities.Event) (entities.Event, error) {
+	if err := r.Db.Create(&event).Error; err != nil {
+		return entities.Event{}, err
+	}
 	return event, nil
 }
 
-func (r *InMemoryEventRepository) DeleteEvent(id string) (entities.Event, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormEventRepository) DeleteEvent(id uint) (entities.Event, error) {
+	var event entities.Event
 
-	for i, event := range r.events {
-		if event.ID == id {
-			r.events = append(r.events[:i], r.events[i+1:]...)
-			return event, nil
+	if err := r.Db.First(&event, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Event{}, errors.New("event not found")
 		}
+		return entities.Event{}, err
 	}
-	return entities.Event{}, errors.New("event not found")
+
+	if err := r.Db.Delete(&event).Error; err != nil {
+		return entities.Event{}, err
+	}
+
+	return event, nil
 }
 
-func (r *InMemoryEventRepository) UpdateEvent(id string, updatedEvent entities.Event) (entities.Event, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormEventRepository) UpdateEvent(id uint, updatedEvent entities.Event) (entities.Event, error) {
+	var event entities.Event
 
-	for i, event := range r.events {
-		if event.ID == id {
-			r.events[i] = updatedEvent
-			r.events[i].ID = id
-			return r.events[i], nil
+	if err := r.Db.First(&event, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Event{}, errors.New("event not found")
 		}
+		return entities.Event{}, err
 	}
 
-	return entities.Event{}, errors.New("event not found")
+	if err := r.Db.Model(&event).Updates(updatedEvent).Error; err != nil {
+		return entities.Event{}, err
+	}
+
+	return event, nil
 }

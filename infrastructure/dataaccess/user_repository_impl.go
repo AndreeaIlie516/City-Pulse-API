@@ -2,8 +2,8 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"gorm.io/gorm"
 	"errors"
+	"gorm.io/gorm"
 )
 
 type GormUserRepository struct {
@@ -11,7 +11,7 @@ type GormUserRepository struct {
 }
 
 func NewGormUserRepository(db *gorm.DB) *GormUserRepository {
-    return &GormUserRepository{Db: db}
+	return &GormUserRepository{Db: db}
 }
 
 func (r *GormUserRepository) AllUsers() ([]entities.User, error) {
@@ -21,15 +21,10 @@ func (r *GormUserRepository) AllUsers() ([]entities.User, error) {
 }
 
 func (r *GormUserRepository) AllUserIDs() ([]uint, error) {
-	var users []entities.User
 	var userIDs []uint
 
-	if err := r.Db.Model(&entities.User{}).Select("ID").Find(&users).Error; err != nil {
+	if err := r.Db.Model(&entities.User{}).Select("ID").Find(&userIDs).Error; err != nil {
 		return nil, err
-	}
-
-	for _, user := range users {
-		userIDs = append(userIDs, user.ID)
 	}
 
 	return userIDs, nil
@@ -37,7 +32,8 @@ func (r *GormUserRepository) AllUserIDs() ([]uint, error) {
 
 func (r *GormUserRepository) UserByID(id uint) (*entities.User, error) {
 	var user entities.User
-	if err:=r.Db.First(&user, "ID = ?", id).Error; err != nil {
+
+	if err := r.Db.First(&user, "ID = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
 		}
@@ -57,33 +53,33 @@ func (r *GormUserRepository) CreateUser(user entities.User) (entities.User, erro
 func (r *GormUserRepository) DeleteUser(id uint) (entities.User, error) {
 	var user entities.User
 
-    if err := r.Db.First(&user, "ID = ?", id).Error; err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return entities.User{}, errors.New("user not found")
-        }
-        return entities.User{}, err
-    }
+	if err := r.Db.First(&user, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.User{}, errors.New("user not found")
+		}
+		return entities.User{}, err
+	}
 
-    if err := r.Db.Delete(&user).Error; err != nil {
-        return entities.User{}, err
-    }
+	if err := r.Db.Delete(&user).Error; err != nil {
+		return entities.User{}, err
+	}
 
-    return user, nil
+	return user, nil
 }
 
 func (r *GormUserRepository) UpdateUser(id uint, updatedUser entities.User) (entities.User, error) {
 	var user entities.User
 
-    if err := r.Db.First(&user, "ID = ?", id).Error; err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return entities.User{}, errors.New("user not found")
-        }
-        return entities.User{}, err
-    }
+	if err := r.Db.First(&user, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.User{}, errors.New("user not found")
+		}
+		return entities.User{}, err
+	}
 
-    if err := r.Db.Model(&user).Updates(updatedUser).Error; err != nil {
-        return entities.User{}, err
-    }
+	if err := r.Db.Model(&user).Updates(updatedUser).Error; err != nil {
+		return entities.User{}, err
+	}
 
-    return user, nil
+	return user, nil
 }

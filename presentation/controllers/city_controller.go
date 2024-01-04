@@ -3,8 +3,11 @@ package controllers
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
-	"github.com/gin-gonic/gin"
+	"errors"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type CityController struct {
@@ -24,7 +27,11 @@ func (controller *CityController) CityByID(c *gin.Context) {
 	id := c.Param("id")
 	city, err := controller.Service.CityByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "city not found"})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "city not found"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, city)
@@ -35,6 +42,31 @@ func (controller *CityController) CreateCity(c *gin.Context) {
 
 	if err := c.BindJSON(&newCity); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validate := validator.New()
+
+	err := validate.Struct(newCity)
+
+	if err != nil {
+
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
+			return
+		}
+
+		var errorMessages []string
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := "Validation error on field '" + err.Field() + "': " + err.ActualTag()
+			if err.Param() != "" {
+				errorMessage += " (Parameter: " + err.Param() + ")"
+			}
+			errorMessages = append(errorMessages, errorMessage)
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errorMessages})
 		return
 	}
 
@@ -53,7 +85,11 @@ func (controller *CityController) DeleteCity(c *gin.Context) {
 	city, err := controller.Service.DeleteCity(id)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "city not found"})
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "city not found"})
+		}
 		return
 	}
 
@@ -67,6 +103,31 @@ func (controller *CityController) UpdateCity(c *gin.Context) {
 
 	if err := c.BindJSON(&updatedCity); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validate := validator.New()
+
+	err := validate.Struct(updatedCity)
+
+	if err != nil {
+
+		var invalidValidationError *validator.InvalidValidationError
+		if errors.As(err, &invalidValidationError) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid validation error"})
+			return
+		}
+
+		var errorMessages []string
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := "Validation error on field '" + err.Field() + "': " + err.ActualTag()
+			if err.Param() != "" {
+				errorMessage += " (Parameter: " + err.Param() + ")"
+			}
+			errorMessages = append(errorMessages, errorMessage)
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errorMessages})
 		return
 	}
 

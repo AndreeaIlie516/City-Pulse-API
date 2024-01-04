@@ -1,8 +1,12 @@
 package entities
 
+import (
+	"gorm.io/gorm"
+)
+
 type ArtistGenre struct {
-	ID       string `json:"id"`
-	ArtistID string `json:"artist_id"`
-	GenreID  string `json:"genre_id"`
-	Period   string `json:"period"`
+	gorm.Model
+	ArtistID uint   `gorm:"column:artist_id;not null" json:"artist_id" validate:"required,number"`
+	GenreID  uint   `gorm:"column:genre_id;not null" json:"genre_id" validate:"required,number"`
+	Period   string `gorm:"column:period" json:"period" validate:"max=100"`
 }

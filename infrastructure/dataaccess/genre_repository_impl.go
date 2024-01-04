@@ -2,81 +2,85 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"City-Pulse-API/utils"
 	"errors"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
-type InMemoryGenreRepository struct {
-	genres []entities.Genre
-	mu     sync.RWMutex
+type GormGenreRepository struct {
+	Db *gorm.DB
 }
 
-func NewInMemoryGenreRepository() *InMemoryGenreRepository {
-	return &InMemoryGenreRepository{}
+func NewGormGenreRepository(db *gorm.DB) *GormGenreRepository {
+	return &GormGenreRepository{Db: db}
 }
 
-func (r *InMemoryGenreRepository) AllGenres() ([]entities.Genre, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.genres, nil
+func (r *GormGenreRepository) AllGenres() ([]entities.Genre, error) {
+	var genres []entities.Genre
+	result := r.Db.Find(&genres)
+	return genres, result.Error
 }
 
-func (r *InMemoryGenreRepository) AllGenreIDs() []string {
-	var genreIDs []string
+func (r *GormGenreRepository) AllGenreIDs() ([]uint, error) {
+	var genreIDs []uint
 
-	for _, genre := range r.genres {
-		genreIDs = append(genreIDs, genre.ID)
+	if err := r.Db.Model(&entities.Genre{}).Select("ID").Find(&genreIDs).Error; err != nil {
+		return nil, err
 	}
 
-	return genreIDs
+	return genreIDs, nil
 }
 
-func (r *InMemoryGenreRepository) GenreByID(id string) (*entities.Genre, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormGenreRepository) GenreByID(id uint) (*entities.Genre, error) {
+	var genre entities.Genre
 
-	for i, genre := range r.genres {
-		if genre.ID == id {
-			return &r.genres[i], nil
+	if err := r.Db.First(&genre, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("genre not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("genre not found")
+	return &genre, nil
 }
 
-func (r *InMemoryGenreRepository) CreateGenre(genre entities.Genre) (entities.Genre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	genre.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllGenreIDs())
-	r.genres = append(r.genres, genre)
+func (r *GormGenreRepository) CreateGenre(genre entities.Genre) (entities.Genre, error) {
+	if err := r.Db.Create(&genre).Error; err != nil {
+		return entities.Genre{}, err
+	}
 	return genre, nil
 }
 
-func (r *InMemoryGenreRepository) DeleteGenre(id string) (entities.Genre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormGenreRepository) DeleteGenre(id uint) (entities.Genre, error) {
+	var genre entities.Genre
 
-	for i, genre := range r.genres {
-		if genre.ID == id {
-			r.genres = append(r.genres[:i], r.genres[i+1:]...)
-			return genre, nil
+	if err := r.Db.First(&genre, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Genre{}, errors.New("genre not found")
 		}
+		return entities.Genre{}, err
 	}
-	return entities.Genre{}, errors.New("genre not found")
+
+	if err := r.Db.Delete(&genre).Error; err != nil {
+		return entities.Genre{}, err
+	}
+
+	return genre, nil
 }
 
-func (r *InMemoryGenreRepository) UpdateGenre(id string, updatedGenre entities.Genre) (entities.Genre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormGenreRepository) UpdateGenre(id uint, updatedGenre entities.Genre) (entities.Genre, error) {
+	var genre entities.Genre
 
-	for i, genre := range r.genres {
-		if genre.ID == id {
-			r.genres[i].Name = updatedGenre.Name
-			r.genres[i].Description = updatedGenre.Description
-			return r.genres[i], nil
+	if err := r.Db.First(&genre, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Genre{}, errors.New("genre not found")
 		}
+		return entities.Genre{}, err
 	}
 
-	return entities.Genre{}, errors.New("genre not found")
+	if err := r.Db.Model(&genre).Updates(updatedGenre).Error; err != nil {
+		return entities.Genre{}, err
+	}
+
+	return genre, nil
 }

@@ -3,6 +3,8 @@ package services
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/repositories"
+	"errors"
+	"fmt"
 )
 
 type GenreService struct {
@@ -18,7 +20,12 @@ func (service *GenreService) AllGenres() ([]entities.Genre, error) {
 	return genres, nil
 }
 
-func (service *GenreService) GenreByID(id string) (*entities.Genre, error) {
+func (service *GenreService) GenreByID(idStr string) (*entities.Genre, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	genre, err := service.Repo.GenreByID(id)
 	if err != nil {
 		return nil, err
@@ -34,7 +41,12 @@ func (service *GenreService) CreateGenre(genre entities.Genre) (entities.Genre, 
 	return genre, nil
 }
 
-func (service *GenreService) DeleteGenre(id string) (entities.Genre, error) {
+func (service *GenreService) DeleteGenre(idStr string) (entities.Genre, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Genre{}, errors.New("invalid ID format")
+	}
+
 	_, err := service.ArtistGenreRepo.DeleteGenreFromItsArtists(id)
 	if err != nil {
 		return entities.Genre{}, err
@@ -47,7 +59,12 @@ func (service *GenreService) DeleteGenre(id string) (entities.Genre, error) {
 	return genre, nil
 }
 
-func (service *GenreService) UpdateGenre(id string, genre entities.Genre) (entities.Genre, error) {
+func (service *GenreService) UpdateGenre(idStr string, genre entities.Genre) (entities.Genre, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Genre{}, errors.New("invalid ID format")
+	}
+
 	genre, err := service.Repo.UpdateGenre(id, genre)
 	if err != nil {
 		return entities.Genre{}, err

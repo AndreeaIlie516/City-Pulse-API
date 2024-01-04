@@ -6,35 +6,48 @@ import (
 	"City-Pulse-API/infrastructure/dataaccess"
 	"City-Pulse-API/presentation/controllers"
 	"City-Pulse-API/routes"
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
-    "gorm.io/gorm"
-	"log"
+	"gorm.io/gorm"
 )
 
 func main() {
 	router := gin.Default()
 
 	dsn := "host=localhost user=postgres password=postgres dbname=CityPulse port=5433 sslmode=disable TimeZone=Europe/Bucharest"
-    
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-    if err != nil {
-        log.Fatalf("Failed to connect to database: %s", err.Error())
-    }
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %s", err.Error())
+	}
 
-	err = db.AutoMigrate(&entities.User{})
-    if err != nil {
-        log.Fatalf("Failed to migrate database: %v", err)
-    }
+	entitiesToMigrate := []interface{}{
+		&entities.Genre{},
+		&entities.Artist{},
+		&entities.ArtistGenre{},
+		&entities.Event{},
+		&entities.EventArtist{},
+		&entities.City{},
+		&entities.Location{},
+		&entities.User{},
+	}
 
-	genreRepository := dataaccess.NewInMemoryGenreRepository()
-	artistRepository := dataaccess.NewInMemoryArtistRepository()
-	artistGenreRepository := dataaccess.NewInMemoryArtistGenreRepository()
-	eventRepository := dataaccess.NewInMemoryEventRepository()
-	eventArtistRepository := dataaccess.NewInMemoryEventArtistRepository()
-	cityRepository := dataaccess.NewInMemoryCityRepository()
-	locationRepository := dataaccess.NewInMemoryLocationRepository()
+	for _, entity := range entitiesToMigrate {
+		err := db.AutoMigrate(entity)
+		if err != nil {
+			log.Fatalf("Failed to migrate database: %v", err)
+		}
+	}
+
+	genreRepository := dataaccess.NewGormGenreRepository(db)
+	artistRepository := dataaccess.NewGormArtistRepository(db)
+	artistGenreRepository := dataaccess.NewGormArtistGenreRepository(db)
+	eventRepository := dataaccess.NewGormEventRepository(db)
+	eventArtistRepository := dataaccess.NewGormEventArtistRepository(db)
+	cityRepository := dataaccess.NewGormCityRepository(db)
+	locationRepository := dataaccess.NewGormLocationRepository(db)
 	userRepository := dataaccess.NewGormUserRepository(db)
 
 	genreService := services.GenreService{Repo: genreRepository, ArtistGenreRepo: artistGenreRepository}

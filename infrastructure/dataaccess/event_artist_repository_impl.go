@@ -2,158 +2,151 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"City-Pulse-API/utils"
 	"errors"
-	"sync"
+	"gorm.io/gorm"
 )
 
-type InMemoryEventArtistRepository struct {
-	eventArtistAssociations []entities.EventArtist
-	mu                      sync.RWMutex
+type GormEventArtistRepository struct {
+	Db *gorm.DB
 }
 
-func NewInMemoryEventArtistRepository() *InMemoryEventArtistRepository {
-	return &InMemoryEventArtistRepository{}
+func NewGormEventArtistRepository(db *gorm.DB) *GormEventArtistRepository {
+	return &GormEventArtistRepository{Db: db}
 }
 
-func (r *InMemoryEventArtistRepository) AllEventArtistAssociations() ([]entities.EventArtist, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.eventArtistAssociations, nil
+func (r *GormEventArtistRepository) AllEventArtistAssociations() ([]entities.EventArtist, error) {
+	var eventArtistAssociations []entities.EventArtist
+	result := r.Db.Find(&eventArtistAssociations)
+	return eventArtistAssociations, result.Error
 }
 
-func (r *InMemoryEventArtistRepository) AllEventArtistAssociationIDs() []string {
-	var eventArtistAssociationIDs []string
+func (r *GormEventArtistRepository) AllEventArtistAssociationIDs() ([]uint, error) {
+	var eventArtistAssociationIDs []uint
 
-	for _, eventArtistAssociation := range r.eventArtistAssociations {
-		eventArtistAssociationIDs = append(eventArtistAssociationIDs, eventArtistAssociation.ID)
+	if err := r.Db.Model(&entities.EventArtist{}).Select("ID").Find(&eventArtistAssociationIDs).Error; err != nil {
+		return nil, err
 	}
 
-	return eventArtistAssociationIDs
+	return eventArtistAssociationIDs, nil
 }
 
-func (r *InMemoryEventArtistRepository) EventArtistAssociationByID(id string) (*entities.EventArtist, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormEventArtistRepository) EventArtistAssociationByID(id uint) (*entities.EventArtist, error) {
+	var eventArtistAssociation entities.EventArtist
 
-	for i, eventArtistAssociation := range r.eventArtistAssociations {
-		if eventArtistAssociation.ID == id {
-			return &r.eventArtistAssociations[i], nil
+	if err := r.Db.First(&eventArtistAssociation, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("eventArtistAssociation not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("event artist association not found")
+	return &eventArtistAssociation, nil
 }
 
-func (r *InMemoryEventArtistRepository) EventArtistAssociation(eventID string, artistID string) (*entities.EventArtist, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormEventArtistRepository) EventArtistAssociation(eventID uint, artistID uint) (*entities.EventArtist, error) {
+	var eventArtistAssociation entities.EventArtist
 
-	for i, eventArtistAssociation := range r.eventArtistAssociations {
-		if eventArtistAssociation.EventID == eventID && eventArtistAssociation.ArtistID == artistID {
-			return &r.eventArtistAssociations[i], nil
+	if err := r.Db.First(&eventArtistAssociation, "event_id = ? AND artist_id = ?", eventID, artistID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("eventArtistAssociation not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("event artist association not found")
+	return &eventArtistAssociation, nil
 }
 
-func (r *InMemoryEventArtistRepository) ArtistIDsForEvent(eventID string) ([]string, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormEventArtistRepository) ArtistIDsForEvent(eventID uint) ([]uint, error) {
+	var artistIDs []uint
 
-	var artistIDs []string
-
-	for _, eventArtistAssociation := range r.eventArtistAssociations {
-		if eventArtistAssociation.EventID == eventID {
-			artistIDs = append(artistIDs, eventArtistAssociation.ArtistID)
-		}
+	if err := r.Db.Where("event_id = ?", eventID).Model(&entities.EventArtist{}).Select("ID").Find(&artistIDs).Error; err != nil {
+		return nil, err
 	}
 
 	return artistIDs, nil
 }
 
-func (r *InMemoryEventArtistRepository) EventIDsForArtist(artistID string) ([]string, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormEventArtistRepository) EventIDsForArtist(artistID uint) ([]uint, error) {
+	var eventIDs []uint
 
-	var eventIDs []string
-
-	for _, eventArtistAssociation := range r.eventArtistAssociations {
-		if eventArtistAssociation.ArtistID == artistID {
-			eventIDs = append(eventIDs, eventArtistAssociation.EventID)
-		}
+	if err := r.Db.Where("artist_id = ?", artistID).Model(&entities.EventArtist{}).Select("event_id").Find(&eventIDs).Error; err != nil {
+		return nil, err
 	}
 
 	return eventIDs, nil
 }
 
-func (r *InMemoryEventArtistRepository) CreateEventArtistAssociation(eventArtistAssociation entities.EventArtist) (entities.EventArtist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	eventArtistAssociation.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllEventArtistAssociationIDs())
-	r.eventArtistAssociations = append(r.eventArtistAssociations, eventArtistAssociation)
+func (r *GormEventArtistRepository) CreateEventArtistAssociation(eventArtistAssociation entities.EventArtist) (entities.EventArtist, error) {
+	if err := r.Db.Create(&eventArtistAssociation).Error; err != nil {
+		return entities.EventArtist{}, err
+	}
 	return eventArtistAssociation, nil
 }
 
-func (r *InMemoryEventArtistRepository) DeleteEventArtistAssociation(id string) (entities.EventArtist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormEventArtistRepository) DeleteEventArtistAssociation(id uint) (entities.EventArtist, error) {
+	var eventArtistAssociation entities.EventArtist
 
-	for i, eventArtistAssociation := range r.eventArtistAssociations {
-		if eventArtistAssociation.ID == id {
-			r.eventArtistAssociations = append(r.eventArtistAssociations[:i], r.eventArtistAssociations[i+1:]...)
-			return eventArtistAssociation, nil
+	if err := r.Db.First(&eventArtistAssociation, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.EventArtist{}, errors.New("eventArtistAssociation not found")
 		}
+		return entities.EventArtist{}, err
 	}
-	return entities.EventArtist{}, errors.New("event artist associations not found")
+
+	if err := r.Db.Delete(&eventArtistAssociation).Error; err != nil {
+		return entities.EventArtist{}, err
+	}
+
+	return eventArtistAssociation, nil
 }
 
-func (r *InMemoryEventArtistRepository) DeleteArtistFromItsEvents(artistID string) ([]entities.EventArtist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var remainingAssociations []entities.EventArtist
+func (r *GormEventArtistRepository) DeleteArtistFromItsEvents(artistID uint) ([]entities.EventArtist, error) {
+	var eventArtistAssociations []entities.EventArtist
 	var deletedAssociations []entities.EventArtist
-	for _, association := range r.eventArtistAssociations {
-		if association.ArtistID == artistID {
-			deletedAssociations = append(deletedAssociations, association)
-		} else {
-			remainingAssociations = append(remainingAssociations, association)
-		}
+
+	if err := r.Db.Where("artist_id = ?", artistID).Find(&eventArtistAssociations).Error; err != nil {
+		return []entities.EventArtist{}, err
 	}
-	r.eventArtistAssociations = remainingAssociations
+
+	deletedAssociations = append(deletedAssociations, eventArtistAssociations...)
+
+	if err := r.Db.Delete(&eventArtistAssociations, "artist_id = ?", artistID).Error; err != nil {
+		return []entities.EventArtist{}, err
+	}
+
 	return deletedAssociations, nil
 }
 
-func (r *InMemoryEventArtistRepository) DeleteEventFromItsArtists(eventID string) ([]entities.EventArtist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var remainingAssociations []entities.EventArtist
+func (r *GormEventArtistRepository) DeleteEventFromItsArtists(eventID uint) ([]entities.EventArtist, error) {
+	var eventArtistAssociations []entities.EventArtist
 	var deletedAssociations []entities.EventArtist
-	for _, association := range r.eventArtistAssociations {
-		if association.EventID == eventID {
-			deletedAssociations = append(deletedAssociations, association)
-		} else {
-			remainingAssociations = append(remainingAssociations, association)
-		}
+
+	if err := r.Db.Where("event_id = ?", eventID).Find(&eventArtistAssociations).Error; err != nil {
+		return []entities.EventArtist{}, err
 	}
-	r.eventArtistAssociations = remainingAssociations
+
+	deletedAssociations = append(deletedAssociations, eventArtistAssociations...)
+
+	if err := r.Db.Delete(&eventArtistAssociations, "event_id = ?", eventID).Error; err != nil {
+		return []entities.EventArtist{}, err
+	}
+
 	return deletedAssociations, nil
 }
 
-func (r *InMemoryEventArtistRepository) UpdateEventArtistAssociation(id string, updatedEventArtistAssociation entities.EventArtist) (entities.EventArtist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for i, eventArtistAssociation := range r.eventArtistAssociations {
-		if eventArtistAssociation.ID == id {
-			r.eventArtistAssociations[i] = updatedEventArtistAssociation
-			r.eventArtistAssociations[i].ID = id
-			return r.eventArtistAssociations[i], nil
+func (r *GormEventArtistRepository) UpdateEventArtistAssociation(id uint, updatedEventArtistAssociation entities.EventArtist) (entities.EventArtist, error) {
+	var eventArtistAssociation entities.EventArtist
+
+	if err := r.Db.First(&eventArtistAssociation, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.EventArtist{}, errors.New("eventArtistAssociation not found")
 		}
+		return entities.EventArtist{}, err
 	}
 
-	return entities.EventArtist{}, errors.New("event artist association not found")
+	if err := r.Db.Model(&eventArtistAssociation).Updates(updatedEventArtistAssociation).Error; err != nil {
+		return entities.EventArtist{}, err
+	}
+
+	return eventArtistAssociation, nil
 }

@@ -2,158 +2,152 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"City-Pulse-API/utils"
 	"errors"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
-type InMemoryArtistGenreRepository struct {
-	artistGenreAssociations []entities.ArtistGenre
-	mu                      sync.RWMutex
+type GormArtistGenreRepository struct {
+	Db *gorm.DB
 }
 
-func NewInMemoryArtistGenreRepository() *InMemoryArtistGenreRepository {
-	return &InMemoryArtistGenreRepository{}
+func NewGormArtistGenreRepository(db *gorm.DB) *GormArtistGenreRepository {
+	return &GormArtistGenreRepository{Db: db}
 }
 
-func (r *InMemoryArtistGenreRepository) AllArtistGenreAssociations() ([]entities.ArtistGenre, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.artistGenreAssociations, nil
+func (r *GormArtistGenreRepository) AllArtistGenreAssociations() ([]entities.ArtistGenre, error) {
+	var artistGenreAssociations []entities.ArtistGenre
+	result := r.Db.Find(&artistGenreAssociations)
+	return artistGenreAssociations, result.Error
 }
 
-func (r *InMemoryArtistGenreRepository) AllArtistGenreAssociationIDs() []string {
-	var artistGenreAssociationIDs []string
+func (r *GormArtistGenreRepository) AllArtistGenreAssociationIDs() ([]uint, error) {
+	var artistGenreAssociationIDs []uint
 
-	for _, artistGenreAssociation := range r.artistGenreAssociations {
-		artistGenreAssociationIDs = append(artistGenreAssociationIDs, artistGenreAssociation.ID)
+	if err := r.Db.Model(&entities.ArtistGenre{}).Select("ID").Find(&artistGenreAssociationIDs).Error; err != nil {
+		return nil, err
 	}
 
-	return artistGenreAssociationIDs
+	return artistGenreAssociationIDs, nil
 }
 
-func (r *InMemoryArtistGenreRepository) ArtistGenreAssociationByID(id string) (*entities.ArtistGenre, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormArtistGenreRepository) ArtistGenreAssociationByID(id uint) (*entities.ArtistGenre, error) {
+	var artistGenreAssociation entities.ArtistGenre
 
-	for i, artistGenreAssociation := range r.artistGenreAssociations {
-		if artistGenreAssociation.ID == id {
-			return &r.artistGenreAssociations[i], nil
+	if err := r.Db.First(&artistGenreAssociation, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("artistGenreAssociation not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("artist genre association not found")
+	return &artistGenreAssociation, nil
 }
 
-func (r *InMemoryArtistGenreRepository) ArtistGenreAssociation(artistID string, genreID string) (*entities.ArtistGenre, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormArtistGenreRepository) ArtistGenreAssociation(artistID uint, genreID uint) (*entities.ArtistGenre, error) {
+	var artistGenreAssociation entities.ArtistGenre
 
-	for i, artistGenreAssociation := range r.artistGenreAssociations {
-		if artistGenreAssociation.ArtistID == artistID && artistGenreAssociation.GenreID == genreID {
-			return &r.artistGenreAssociations[i], nil
+	if err := r.Db.First(&artistGenreAssociation, "artist_id = ? AND genre_id = ?", artistID, genreID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("artistGenreAssociation not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("artist genre association not found")
+	return &artistGenreAssociation, nil
 }
 
-func (r *InMemoryArtistGenreRepository) GenreIDsForArtist(artistID string) ([]string, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormArtistGenreRepository) GenreIDsForArtist(artistID uint) ([]uint, error) {
+	var genreIDs []uint
 
-	var genreIDs []string
-
-	for _, artistGenreAssociation := range r.artistGenreAssociations {
-		if artistGenreAssociation.ArtistID == artistID {
-			genreIDs = append(genreIDs, artistGenreAssociation.GenreID)
-		}
+	if err := r.Db.Where("artist_id = ?", artistID).Model(&entities.ArtistGenre{}).Select("genre_id").Find(&genreIDs).Error; err != nil {
+		return nil, err
 	}
 
 	return genreIDs, nil
 }
 
-func (r *InMemoryArtistGenreRepository) ArtistIDsForGenre(genreID string) ([]string, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormArtistGenreRepository) ArtistIDsForGenre(genreID uint) ([]uint, error) {
+	var artistIDs []uint
 
-	var artistIDs []string
-
-	for _, artistGenreAssociation := range r.artistGenreAssociations {
-		if artistGenreAssociation.GenreID == genreID {
-			artistIDs = append(artistIDs, artistGenreAssociation.ArtistID)
-		}
+	if err := r.Db.Where("genre_id = ?", genreID).Model(&entities.ArtistGenre{}).Select("artist_id").Find(&artistIDs).Error; err != nil {
+		return nil, err
 	}
 
 	return artistIDs, nil
 }
 
-func (r *InMemoryArtistGenreRepository) CreateArtistGenreAssociation(artistGenreAssociation entities.ArtistGenre) (entities.ArtistGenre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	artistGenreAssociation.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, r.AllArtistGenreAssociationIDs())
-	r.artistGenreAssociations = append(r.artistGenreAssociations, artistGenreAssociation)
+func (r *GormArtistGenreRepository) CreateArtistGenreAssociation(artistGenreAssociation entities.ArtistGenre) (entities.ArtistGenre, error) {
+	if err := r.Db.Create(&artistGenreAssociation).Error; err != nil {
+		return entities.ArtistGenre{}, err
+	}
 	return artistGenreAssociation, nil
 }
 
-func (r *InMemoryArtistGenreRepository) DeleteArtistGenreAssociation(id string) (entities.ArtistGenre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormArtistGenreRepository) DeleteArtistGenreAssociation(id uint) (entities.ArtistGenre, error) {
+	var artistGenreAssociation entities.ArtistGenre
 
-	for i, artistGenreAssociation := range r.artistGenreAssociations {
-		if artistGenreAssociation.ID == id {
-			r.artistGenreAssociations = append(r.artistGenreAssociations[:i], r.artistGenreAssociations[i+1:]...)
-			return artistGenreAssociation, nil
+	if err := r.Db.First(&artistGenreAssociation, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.ArtistGenre{}, errors.New("artistGenreAssociation not found")
 		}
+		return entities.ArtistGenre{}, err
 	}
-	return entities.ArtistGenre{}, errors.New("artist genre associations not found")
+
+	if err := r.Db.Delete(&artistGenreAssociation).Error; err != nil {
+		return entities.ArtistGenre{}, err
+	}
+
+	return artistGenreAssociation, nil
 }
 
-func (r *InMemoryArtistGenreRepository) DeleteGenreFromItsArtists(genreID string) ([]entities.ArtistGenre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var remainingAssociations []entities.ArtistGenre
+func (r *GormArtistGenreRepository) DeleteGenreFromItsArtists(genreID uint) ([]entities.ArtistGenre, error) {
+	var artistGenreAssociations []entities.ArtistGenre
 	var deletedAssociations []entities.ArtistGenre
-	for _, association := range r.artistGenreAssociations {
-		if association.GenreID == genreID {
-			deletedAssociations = append(deletedAssociations, association)
-		} else {
-			remainingAssociations = append(remainingAssociations, association)
-		}
+
+	if err := r.Db.Where("genreID = ?", genreID).Find(&artistGenreAssociations).Error; err != nil {
+		return []entities.ArtistGenre{}, err
 	}
-	r.artistGenreAssociations = remainingAssociations
+
+	deletedAssociations = append(deletedAssociations, artistGenreAssociations...)
+
+	if err := r.Db.Delete(&artistGenreAssociations, "genreID = ?", genreID).Error; err != nil {
+		return []entities.ArtistGenre{}, err
+	}
+
 	return deletedAssociations, nil
 }
 
-func (r *InMemoryArtistGenreRepository) DeleteArtistFromItsGenres(artistID string) ([]entities.ArtistGenre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var remainingAssociations []entities.ArtistGenre
+func (r *GormArtistGenreRepository) DeleteArtistFromItsGenres(artistID uint) ([]entities.ArtistGenre, error) {
+	var artistGenreAssociations []entities.ArtistGenre
 	var deletedAssociations []entities.ArtistGenre
-	for _, association := range r.artistGenreAssociations {
-		if association.ArtistID == artistID {
-			deletedAssociations = append(deletedAssociations, association)
-		} else {
-			remainingAssociations = append(remainingAssociations, association)
-		}
+
+	if err := r.Db.Where("artistID = ?", artistID).Find(&artistGenreAssociations).Error; err != nil {
+		return []entities.ArtistGenre{}, err
 	}
-	r.artistGenreAssociations = remainingAssociations
+
+	deletedAssociations = append(deletedAssociations, artistGenreAssociations...)
+
+	if err := r.Db.Delete(&artistGenreAssociations, "artistID = ?", artistID).Error; err != nil {
+		return []entities.ArtistGenre{}, err
+	}
+
 	return deletedAssociations, nil
 }
 
-func (r *InMemoryArtistGenreRepository) UpdateArtistGenreAssociation(id string, updatedArtistGenreAssociation entities.ArtistGenre) (entities.ArtistGenre, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for i, artistGenreAssociation := range r.artistGenreAssociations {
-		if artistGenreAssociation.ID == id {
-			r.artistGenreAssociations[i] = updatedArtistGenreAssociation
-			r.artistGenreAssociations[i].ID = id
-			return r.artistGenreAssociations[i], nil
+func (r *GormArtistGenreRepository) UpdateArtistGenreAssociation(id uint, updatedArtistGenreAssociation entities.ArtistGenre) (entities.ArtistGenre, error) {
+	var artistGenreAssociation entities.ArtistGenre
+
+	if err := r.Db.First(&artistGenreAssociation, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.ArtistGenre{}, errors.New("artistGenreAssociation not found")
 		}
+		return entities.ArtistGenre{}, err
 	}
 
-	return entities.ArtistGenre{}, errors.New("artist genre association not found")
+	if err := r.Db.Model(&artistGenreAssociation).Updates(updatedArtistGenreAssociation).Error; err != nil {
+		return entities.ArtistGenre{}, err
+	}
+
+	return artistGenreAssociation, nil
 }

@@ -3,6 +3,8 @@ package services
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/repositories"
+	"errors"
+	"fmt"
 )
 
 type ArtistService struct {
@@ -19,7 +21,12 @@ func (service *ArtistService) AllArtists() ([]entities.Artist, error) {
 	return artists, nil
 }
 
-func (service *ArtistService) ArtistByID(id string) (*entities.Artist, error) {
+func (service *ArtistService) ArtistByID(idStr string) (*entities.Artist, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	artist, err := service.Repo.ArtistByID(id)
 	if err != nil {
 		return nil, err
@@ -35,7 +42,12 @@ func (service *ArtistService) CreateArtist(artist entities.Artist) (entities.Art
 	return artist, nil
 }
 
-func (service *ArtistService) DeleteArtist(id string) (entities.Artist, error) {
+func (service *ArtistService) DeleteArtist(idStr string) (entities.Artist, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Artist{}, errors.New("invalid ID format")
+	}
+
 	_, err := service.ArtistGenreRepo.DeleteArtistFromItsGenres(id)
 	if err != nil {
 		return entities.Artist{}, err
@@ -53,7 +65,12 @@ func (service *ArtistService) DeleteArtist(id string) (entities.Artist, error) {
 	return artist, nil
 }
 
-func (service *ArtistService) UpdateArtist(id string, artist entities.Artist) (entities.Artist, error) {
+func (service *ArtistService) UpdateArtist(idStr string, artist entities.Artist) (entities.Artist, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Artist{}, errors.New("invalid ID format")
+	}
+
 	artist, err := service.Repo.UpdateArtist(id, artist)
 	if err != nil {
 		return entities.Artist{}, err

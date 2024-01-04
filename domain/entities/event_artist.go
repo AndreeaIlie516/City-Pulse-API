@@ -1,25 +1,13 @@
 package entities
 
+import (
+	"gorm.io/gorm"
+)
+
 type EventArtist struct {
-	ID        string `json:"id"`
-	EventID   string `json:"event_id"`
-	ArtistID  string `json:"artist_id"`
-	StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
-}
-
-type EventArtistDetail struct {
-	Association EventArtist
-	Event       EventDetails
-	Artist      Artist
-}
-
-type EventWithArtists struct {
-	Event   EventDetails
-	Artists []Artist
-}
-
-type ArtistWithEvents struct {
-	Artist Artist
-	Events []EventDetails
+	gorm.Model
+	EventID   uint   `gorm:"column:event_id;not null" json:"event_id" validate:"required,number"`
+	ArtistID  uint   `gorm:"column:artist_id;not null" json:"artist_id" validate:"required,number"`
+	StartTime string `gorm:"column:start_time" json:"start_time" validate:"required,max=30"`
+	EndTime   string `gorm:"column:end_time" json:"end_time" validate:"required,max=30"`
 }

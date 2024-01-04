@@ -2,82 +2,85 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
-	"City-Pulse-API/utils"
 	"errors"
-	"sync"
+
+	"gorm.io/gorm"
 )
 
-type InMemoryArtistRepository struct {
-	artists []entities.Artist
-	mu      sync.RWMutex
+type GormArtistRepository struct {
+	Db *gorm.DB
 }
 
-func NewInMemoryArtistRepository() *InMemoryArtistRepository {
-	return &InMemoryArtistRepository{}
+func NewGormArtistRepository(db *gorm.DB) *GormArtistRepository {
+	return &GormArtistRepository{Db: db}
 }
 
-func (r *InMemoryArtistRepository) AllArtists() ([]entities.Artist, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.artists, nil
+func (r *GormArtistRepository) AllArtists() ([]entities.Artist, error) {
+	var artists []entities.Artist
+	result := r.Db.Find(&artists)
+	return artists, result.Error
 }
 
-func (r *InMemoryArtistRepository) AllArtistIDs() []string {
-	var artistIDs []string
+func (r *GormArtistRepository) AllArtistIDs() ([]uint, error) {
+	var artistIDs []uint
 
-	for _, artist := range r.artists {
-		artistIDs = append(artistIDs, artist.ID)
+	if err := r.Db.Model(&entities.Artist{}).Select("ID").Find(&artistIDs).Error; err != nil {
+		return nil, err
 	}
 
-	return artistIDs
+	return artistIDs, nil
 }
 
-func (r *InMemoryArtistRepository) ArtistByID(id string) (*entities.Artist, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (r *GormArtistRepository) ArtistByID(id uint) (*entities.Artist, error) {
+	var artist entities.Artist
 
-	for i, artist := range r.artists {
-		if artist.ID == id {
-			return &r.artists[i], nil
+	if err := r.Db.First(&artist, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("artist not found")
 		}
+		return nil, err
 	}
 
-	return nil, errors.New("artist not found")
+	return &artist, nil
 }
 
-func (r *InMemoryArtistRepository) CreateArtist(artist entities.Artist) (entities.Artist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	artistIDs := r.AllArtistIDs()
-	artist.ID = utils.CreateUniqueID(utils.MinRange, utils.MaxRange, artistIDs)
-	r.artists = append(r.artists, artist)
+func (r *GormArtistRepository) CreateArtist(artist entities.Artist) (entities.Artist, error) {
+	if err := r.Db.Create(&artist).Error; err != nil {
+		return entities.Artist{}, err
+	}
 	return artist, nil
 }
 
-func (r *InMemoryArtistRepository) DeleteArtist(id string) (entities.Artist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *GormArtistRepository) DeleteArtist(id uint) (entities.Artist, error) {
+	var artist entities.Artist
 
-	for i, artist := range r.artists {
-		if artist.ID == id {
-			r.artists = append(r.artists[:i], r.artists[i+1:]...)
-			return artist, nil
+	if err := r.Db.First(&artist, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Artist{}, errors.New("artist not found")
 		}
+		return entities.Artist{}, err
 	}
-	return entities.Artist{}, errors.New("artist not found")
+
+	if err := r.Db.Delete(&artist).Error; err != nil {
+		return entities.Artist{}, err
+	}
+
+	return artist, nil
 }
 
-func (r *InMemoryArtistRepository) UpdateArtist(id string, updatedArtist entities.Artist) (entities.Artist, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for i, artist := range r.artists {
-		if artist.ID == id {
-			r.artists[i] = updatedArtist
-			r.artists[i].ID = id
-			return r.artists[i], nil
+func (r *GormArtistRepository) UpdateArtist(id uint, updatedArtist entities.Artist) (entities.Artist, error) {
+	var artist entities.Artist
+
+	if err := r.Db.First(&artist, "ID = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Artist{}, errors.New("artist not found")
 		}
+		return entities.Artist{}, err
 	}
 
-	return entities.Artist{}, errors.New("artist not found")
+	if err := r.Db.Model(&artist).Updates(updatedArtist).Error; err != nil {
+		return entities.Artist{}, err
+	}
+
+	return artist, nil
 }

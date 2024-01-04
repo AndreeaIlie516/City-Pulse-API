@@ -3,6 +3,8 @@ package services
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/repositories"
+	"errors"
+	"fmt"
 )
 
 type ArtistGenreService struct {
@@ -35,7 +37,12 @@ func (service *ArtistGenreService) AllArtistGenreAssociations() ([]entities.Arti
 	return artistGenreAssociations, nil
 }
 
-func (service *ArtistGenreService) ArtistGenreAssociationByID(id string) (*ArtistGenreDetail, error) {
+func (service *ArtistGenreService) ArtistGenreAssociationByID(idStr string) (*ArtistGenreDetail, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	artistGenreAssociation, err := service.Repo.ArtistGenreAssociationByID(id)
 	if err != nil {
 		return nil, err
@@ -59,10 +66,20 @@ func (service *ArtistGenreService) ArtistGenreAssociationByID(id string) (*Artis
 	return artistGenreDetail, nil
 }
 
-func (service *ArtistGenreService) ArtistGenreAssociation(artistID string, genreID string) (*ArtistGenreDetail, error) {
+func (service *ArtistGenreService) ArtistGenreAssociation(artistIDStr string, genreIDStr string) (*ArtistGenreDetail, error) {
+	var artistID uint
+	if _, err := fmt.Sscanf(artistIDStr, "%d", &artistID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	artist, err := service.ArtistRepo.ArtistByID(artistID)
 	if err != nil {
 		return nil, err
+	}
+
+	var genreID uint
+	if _, err := fmt.Sscanf(genreIDStr, "%d", &genreID); err != nil {
+		return nil, errors.New("invalid ID format")
 	}
 
 	genre, err := service.GenreRepo.GenreByID(genreID)
@@ -83,7 +100,12 @@ func (service *ArtistGenreService) ArtistGenreAssociation(artistID string, genre
 	return artistGenreDetail, nil
 }
 
-func (service *ArtistGenreService) ArtistWithGenres(artistID string) (*ArtistWithGenres, error) {
+func (service *ArtistGenreService) ArtistWithGenres(artistIDStr string) (*ArtistWithGenres, error) {
+	var artistID uint
+	if _, err := fmt.Sscanf(artistIDStr, "%d", &artistID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	artist, err := service.ArtistRepo.ArtistByID(artistID)
 	if err != nil {
 		return &ArtistWithGenres{}, err
@@ -108,7 +130,12 @@ func (service *ArtistGenreService) ArtistWithGenres(artistID string) (*ArtistWit
 	return artistWithGenres, nil
 }
 
-func (service *ArtistGenreService) GenreWithArtists(genreID string) (*GenreWithArtists, error) {
+func (service *ArtistGenreService) GenreWithArtists(genreIDStr string) (*GenreWithArtists, error) {
+	var genreID uint
+	if _, err := fmt.Sscanf(genreIDStr, "%d", &genreID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	genre, err := service.GenreRepo.GenreByID(genreID)
 	if err != nil {
 		return &GenreWithArtists{}, err
@@ -151,7 +178,12 @@ func (service *ArtistGenreService) CreateArtistGenreAssociation(artistGenreAssoc
 	return artistGenreAssociation, nil
 }
 
-func (service *ArtistGenreService) DeleteArtistGenreAssociation(id string) (entities.ArtistGenre, error) {
+func (service *ArtistGenreService) DeleteArtistGenreAssociation(idStr string) (entities.ArtistGenre, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.ArtistGenre{}, errors.New("invalid ID format")
+	}
+
 	artistGenreAssociation, err := service.Repo.DeleteArtistGenreAssociation(id)
 	if err != nil {
 		return entities.ArtistGenre{}, err
@@ -159,7 +191,12 @@ func (service *ArtistGenreService) DeleteArtistGenreAssociation(id string) (enti
 	return artistGenreAssociation, nil
 }
 
-func (service *ArtistGenreService) DeleteGenreFromItsArtists(genreID string) ([]entities.ArtistGenre, error) {
+func (service *ArtistGenreService) DeleteGenreFromItsArtists(genreIDStr string) ([]entities.ArtistGenre, error) {
+	var genreID uint
+	if _, err := fmt.Sscanf(genreIDStr, "%d", &genreID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	_, err := service.GenreRepo.GenreByID(genreID)
 	if err != nil {
 		return []entities.ArtistGenre{}, err
@@ -172,7 +209,12 @@ func (service *ArtistGenreService) DeleteGenreFromItsArtists(genreID string) ([]
 	return artistGenreAssociation, nil
 }
 
-func (service *ArtistGenreService) DeleteArtistFromItsGenres(artistID string) ([]entities.ArtistGenre, error) {
+func (service *ArtistGenreService) DeleteArtistFromItsGenres(artistIDStr string) ([]entities.ArtistGenre, error) {
+	var artistID uint
+	if _, err := fmt.Sscanf(artistIDStr, "%d", &artistID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
 	_, err := service.ArtistRepo.ArtistByID(artistID)
 	if err != nil {
 		return []entities.ArtistGenre{}, err
@@ -185,7 +227,12 @@ func (service *ArtistGenreService) DeleteArtistFromItsGenres(artistID string) ([
 	return artistGenreAssociation, nil
 }
 
-func (service *ArtistGenreService) UpdateArtistGenreAssociation(id string, artistGenreAssociation entities.ArtistGenre) (entities.ArtistGenre, error) {
+func (service *ArtistGenreService) UpdateArtistGenreAssociation(idStr string, artistGenreAssociation entities.ArtistGenre) (entities.ArtistGenre, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.ArtistGenre{}, errors.New("invalid ID format")
+	}
+
 	artistGenreAssociation, err := service.Repo.UpdateArtistGenreAssociation(id, artistGenreAssociation)
 	if err != nil {
 		return entities.ArtistGenre{}, err
