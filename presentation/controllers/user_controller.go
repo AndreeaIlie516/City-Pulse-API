@@ -3,6 +3,7 @@ package controllers
 import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
+	"City-Pulse-API/utils"
 	"errors"
 	"net/http"
 
@@ -46,6 +47,19 @@ func (controller *UserController) CreateUser(c *gin.Context) {
 	}
 
 	validate := validator.New()
+
+	validators := map[string]validator.Func{
+		"usernameValidator": utils.UsernameValidator,
+		"nameValidator":     utils.NameValidator,
+		"passwordValidator": utils.PasswordValidator,
+	}
+
+	for validatorName, validatorFunction := range validators {
+		if err := validate.RegisterValidation(validatorName, validatorFunction); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register validator: " + validatorName})
+			return
+		}
+	}
 
 	err := validate.Struct(newUser)
 
@@ -107,6 +121,19 @@ func (controller *UserController) UpdateUser(c *gin.Context) {
 	}
 
 	validate := validator.New()
+
+	validators := map[string]validator.Func{
+		"usernameValidator": utils.UsernameValidator,
+		"nameValidator":     utils.NameValidator,
+		"passwordValidator": utils.PasswordValidator,
+	}
+
+	for validatorName, validatorFunction := range validators {
+		if err := validate.RegisterValidation(validatorName, validatorFunction); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register validator: " + validatorName})
+			return
+		}
+	}
 
 	err := validate.Struct(updatedUser)
 
