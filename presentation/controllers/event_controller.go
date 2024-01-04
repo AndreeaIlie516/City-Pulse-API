@@ -140,3 +140,40 @@ func (controller *EventController) UpdateEvent(c *gin.Context) {
 
 	c.JSON(http.StatusOK, event)
 }
+
+func (controller *EventController) FavouriteEvents(c *gin.Context) {
+	favouriteEvents, err := controller.Service.FavouriteEvents()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch favourite events"})
+		return
+	}
+	c.JSON(http.StatusOK, favouriteEvents)
+}
+
+func (controller *EventController) AddEventToFavourites(c *gin.Context) {
+	id := c.Param("id")
+	event, err := controller.Service.AddEventToFavourites(id)
+	if err != nil {
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, event)
+}
+
+func (controller *EventController) DeleteEventFromFavourites(c *gin.Context) {
+	id := c.Param("id")
+	event, err := controller.Service.DeleteEventFromFavourites(id)
+	if err != nil {
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID format"})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, event)
+}

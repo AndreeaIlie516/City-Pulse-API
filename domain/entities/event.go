@@ -15,4 +15,5 @@ type Event struct {
 	OpenGatesTime string `gorm:"column:open_gates_time" json:"open_gates_time" validate:"required,max=30"`
 	Description   string `gorm:"column:description" json:"description" validate:"max=256"`
 	Type          string `gorm:"column:type" json:"type" validate:"max=100"`
+	IsFavourite   bool   `gorm:"column:is_favourite;default:false" json:"is_favourite"`
 }

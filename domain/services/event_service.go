@@ -99,3 +99,37 @@ func (service *EventService) UpdateEvent(idStr string, event entities.Event) (en
 	}
 	return event, nil
 }
+
+func (service *EventService) FavouriteEvents() ([]entities.Event, error) {
+	favouriteEvents, err := service.Repo.FavouriteEvents()
+	if err != nil {
+		return nil, err
+	}
+	return favouriteEvents, nil
+}
+
+func (service *EventService) AddEventToFavourites(idStr string) (entities.Event, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Event{}, errors.New("invalid ID format")
+	}
+
+	event, err := service.Repo.AddEventToFavourites(id)
+	if err != nil {
+		return entities.Event{}, err
+	}
+	return event, nil
+}
+
+func (service *EventService) DeleteEventFromFavourites(idStr string) (entities.Event, error) {
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		return entities.Event{}, errors.New("invalid ID format")
+	}
+
+	event, err := service.Repo.DeleteEventFromFavourites(id)
+	if err != nil {
+		return entities.Event{}, err
+	}
+	return event, nil
+}
