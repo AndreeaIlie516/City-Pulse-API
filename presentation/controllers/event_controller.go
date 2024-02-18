@@ -37,6 +37,34 @@ func (controller *EventController) EventByID(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
+func (controller *EventController) EventsByLocationID(c *gin.Context) {
+	locationID := c.Param("locationId")
+	events, err := controller.Service.EventsByLocationID(locationID)
+	if err != nil {
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, events)
+}
+
+func (controller *EventController) EventsByCityID(c *gin.Context) {
+	cityID := c.Param("cityId")
+	events, err := controller.Service.EventsByCityID(cityID)
+	if err != nil {
+		if err.Error() == "invalid ID format" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, events)
+}
+
 func (controller *EventController) CreateEvent(c *gin.Context) {
 	var newEvent entities.Event
 

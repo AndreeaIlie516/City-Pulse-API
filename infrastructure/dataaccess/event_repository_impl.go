@@ -54,6 +54,19 @@ func (r *GormEventRepository) EventIDsForLocation(locationID uint) ([]uint, erro
 	return eventIDs, nil
 }
 
+func (r *GormEventRepository) EventIDsForCity(cityID uint) ([]uint, error) {
+	var eventIDs []uint
+
+	if err := r.Db.Table("events").Select("events.id").
+		Joins("join locations on locations.id = events.location_id").
+		Where("locations.city_id = ?", cityID).
+		Pluck("events.id", &eventIDs).Error; err != nil {
+		return nil, err
+	}
+
+	return eventIDs, nil
+}
+
 func (r *GormEventRepository) CreateEvent(event entities.Event) (entities.Event, error) {
 	if err := r.Db.Create(&event).Error; err != nil {
 		return entities.Event{}, err

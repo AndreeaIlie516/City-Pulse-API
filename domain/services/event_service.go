@@ -20,6 +20,21 @@ type EventDetails struct {
 	City     entities.City
 }
 
+type EventWithLocation struct {
+	Event    entities.Event
+	Location entities.Location
+}
+
+type EventsByLocation struct {
+	Location entities.Location
+	Events   []entities.Event
+}
+
+type EventsByCity struct {
+	City   entities.City
+	Events []EventWithLocation
+}
+
 func (service *EventService) AllEvents() ([]entities.Event, error) {
 	events, err := service.Repo.AllEvents()
 	if err != nil {
@@ -55,6 +70,71 @@ func (service *EventService) EventByID(idStr string) (*EventDetails, error) {
 		City:     *city,
 	}
 	return eventDetails, nil
+}
+
+func (service *EventService) EventsByLocationID(locationIDStr string) (*EventsByLocation, error) {
+	var locationID uint
+	if _, err := fmt.Sscanf(locationIDStr, "%d", &locationID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
+	location, err := service.LocationRepo.LocationByID(locationID)
+	if err != nil {
+		return &EventsByLocation{}, err
+	}
+
+	eventIDs, err := service.Repo.EventIDsForLocation(locationID)
+	var events []entities.Event
+
+	for _, eventID := range eventIDs {
+		event, err := service.Repo.EventByID(eventID)
+		if err != nil {
+			return &EventsByLocation{}, err
+		}
+		events = append(events, *event)
+	}
+
+	eventsByLocation := &EventsByLocation{
+		Location: *location,
+		Events:   events,
+	}
+
+	return eventsByLocation, nil
+}
+
+func (service *EventService) EventsByCityID(cityIDStr string) (*EventsByCity, error) {
+	var cityID uint
+	if _, err := fmt.Sscanf(cityIDStr, "%d", &cityID); err != nil {
+		return nil, errors.New("invalid ID format")
+	}
+
+	city, err := service.CityRepo.CityByID(cityID)
+	if err != nil {
+		return &EventsByCity{}, err
+	}
+
+	eventIDs, err := service.Repo.EventIDsForCity(cityID)
+	var events []EventWithLocation
+
+	for _, eventID := range eventIDs {
+		event, err := service.Repo.EventByID(eventID)
+		if err != nil {
+			return &EventsByCity{}, err
+		}
+		location, _ := service.LocationRepo.LocationByID(event.LocationID)
+		eventWithLocation := &EventWithLocation{
+			Event:    *event,
+			Location: *location,
+		}
+		events = append(events, *eventWithLocation)
+	}
+
+	eventsByCity := &EventsByCity{
+		City:   *city,
+		Events: events,
+	}
+
+	return eventsByCity, nil
 }
 
 func (service *EventService) CreateEvent(event entities.Event) (entities.Event, error) {
