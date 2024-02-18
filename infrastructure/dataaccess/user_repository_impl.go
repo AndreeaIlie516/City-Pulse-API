@@ -2,8 +2,11 @@ package dataaccess
 
 import (
 	"City-Pulse-API/domain/entities"
+	"City-Pulse-API/utils"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"os"
 )
 
 type GormUserRepository struct {
@@ -43,11 +46,50 @@ func (r *GormUserRepository) UserByID(id uint) (*entities.User, error) {
 	return &user, nil
 }
 
-func (r *GormUserRepository) CreateUser(user entities.User) (entities.User, error) {
+func (r *GormUserRepository) Register(user entities.User) (entities.User, error) {
+	user.Role = entities.NormalUser
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return entities.User{}, err
+	}
+	user.Password = string(hashedPassword)
 	if err := r.Db.Create(&user).Error; err != nil {
 		return entities.User{}, err
 	}
 	return user, nil
+}
+
+func (r *GormUserRepository) Login(loginData entities.LoginRequest) (entities.LoginResponse, error) {
+	var user entities.User
+
+	if err := r.Db.First(&user, "email = ?", loginData.Email).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.LoginResponse{}, errors.New("email not found")
+		}
+		return entities.LoginResponse{}, err
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginData.Password)); err != nil {
+		return entities.LoginResponse{}, err
+	}
+
+	jwtWrapper := utils.JwtWrapper{
+		SecretKey:         os.Getenv("JWT_SECRET"),
+		Issuer:            "AuthService",
+		ExpirationMinutes: 60,
+	}
+
+	signedToken, err := jwtWrapper.GenerateToken(user)
+	if err != nil {
+		return entities.LoginResponse{}, err
+	}
+
+	data := entities.LoginResponse{
+		Email: user.Email,
+		Jwt:   signedToken,
+	}
+
+	return data, nil
 }
 
 func (r *GormUserRepository) DeleteUser(id uint) (entities.User, error) {

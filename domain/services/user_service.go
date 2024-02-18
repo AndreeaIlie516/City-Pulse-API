@@ -33,12 +33,20 @@ func (service *UserService) UserByID(idStr string) (*entities.User, error) {
 	return user, nil
 }
 
-func (service *UserService) CreateUser(user entities.User) (entities.User, error) {
-	user, err := service.Repo.CreateUser(user)
+func (service *UserService) Register(user entities.User) (entities.User, error) {
+	user, err := service.Repo.Register(user)
 	if err != nil {
 		return entities.User{}, err
 	}
 	return user, nil
+}
+
+func (service *UserService) Login(loginData entities.LoginRequest) (entities.LoginResponse, error) {
+	response, err := service.Repo.Login(loginData)
+	if err != nil {
+		return entities.LoginResponse{}, err
+	}
+	return response, nil
 }
 
 func (service *UserService) DeleteUser(idStr string) (entities.User, error) {

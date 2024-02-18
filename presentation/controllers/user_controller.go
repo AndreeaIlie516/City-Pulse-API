@@ -5,6 +5,7 @@ import (
 	"City-Pulse-API/domain/services"
 	"City-Pulse-API/utils"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,23 +26,42 @@ func (controller *UserController) AllUsers(c *gin.Context) {
 }
 
 func (controller *UserController) UserByID(c *gin.Context) {
-	id := c.Param("id")
-	user, err := controller.Service.UserByID(id)
+	requestedID := c.Param("id")
+	userID, _ := c.Get("userID")
+	role, _ := c.Get("role")
+
+	// Log the values of userID and role for debugging
+	fmt.Println("UserID:", userID)
+	fmt.Println("Role:", role)
+
+	var reqID uint
+	_, err := fmt.Sscan(requestedID, &reqID)
 	if err != nil {
-		if err.Error() == "invalid ID format" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		} else {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	if role == entities.NormalUser && userID != reqID {
+		// Log the values of role and userID for debugging
+		fmt.Println("Access denied - Role:", role, "UserID:", userID, "ReqID:", reqID)
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
+	user, err := controller.Service.UserByID(requestedID)
+	if err != nil {
+		// Log the error for debugging
+		fmt.Println("Error fetching user:", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 	c.JSON(http.StatusOK, user)
 }
 
-func (controller *UserController) CreateUser(c *gin.Context) {
+func (controller *UserController) Register(c *gin.Context) {
 	var newUser entities.User
 
-	if err := c.BindJSON(&newUser); err != nil {
+	if err := c.ShouldBindJSON(&newUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -84,13 +104,30 @@ func (controller *UserController) CreateUser(c *gin.Context) {
 		return
 	}
 
-	user, err := controller.Service.CreateUser(newUser)
+	user, err := controller.Service.Register(newUser)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to register"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, user)
+}
+
+func (controller *UserController) Login(c *gin.Context) {
+	var loginData entities.LoginRequest
+
+	if err := c.ShouldBindJSON(&loginData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	loginResponse, err := controller.Service.Login(loginData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "login failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, loginResponse)
 }
 
 func (controller *UserController) DeleteUser(c *gin.Context) {

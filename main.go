@@ -5,8 +5,10 @@ import (
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
 	"City-Pulse-API/infrastructure/dataaccess"
+	"City-Pulse-API/infrastructure/middlewares"
 	"City-Pulse-API/presentation/controllers"
 	"City-Pulse-API/routes"
+	"github.com/joho/godotenv"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +16,10 @@ import (
 
 func main() {
 	router := gin.Default()
+
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	db := database.ConnectDB()
 
@@ -34,6 +40,8 @@ func main() {
 			log.Fatalf("Failed to migrate database: %v", err)
 		}
 	}
+
+	authMiddleware := middlewares.AuthMiddleware{}
 
 	genreRepository := dataaccess.NewGormGenreRepository(db)
 	artistRepository := dataaccess.NewGormArtistRepository(db)
@@ -68,7 +76,7 @@ func main() {
 	routes.RegisterEventArtistRoutes(router, &eventArtistController)
 	routes.RegisterCityRoutes(router, &cityController)
 	routes.RegisterLocationRoutes(router, &locationController)
-	routes.RegisterUserRoutes(router, &userController)
+	routes.RegisterUserRoutes(router, &userController, authMiddleware)
 
 	err := router.Run("localhost:8080")
 	if err != nil {

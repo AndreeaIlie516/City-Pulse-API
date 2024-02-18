@@ -6,11 +6,29 @@ import (
 
 type User struct {
 	gorm.Model
-	Username    string `gorm:"column:username;unique;not null" json:"username" validate:"required,usernameValidator"`
-	Password    string `gorm:"column:password;not null" json:"password" validate:"required,passwordValidator"`
-	FirstName   string `gorm:"column:first_name;not null" json:"first_name" validate:"required,nameValidator"`
-	LastName    string `gorm:"column:last_name;not null" json:"last_name" validate:"required,nameValidator"`
-	Email       string `gorm:"column:email;unique;not null" json:"email" validate:"required,email"`
-	PhoneNumber string `gorm:"column:phone_number;unique;not null" json:"phone_number" validate:"required,e164"`
-	Address     string `gorm:"column:address" json:"address" validate:"max=100"`
+	Username    string     `gorm:"column:username;unique;not null" json:"username" binding:"required" validate:"required,usernameValidator"`
+	Password    string     `gorm:"column:password;not null" json:"password" binding:"required" validate:"required,passwordValidator"`
+	FirstName   string     `gorm:"column:first_name;not null" json:"first_name" binding:"required" validate:"required,nameValidator"`
+	LastName    string     `gorm:"column:last_name;not null" json:"last_name" binding:"required" validate:"required,nameValidator"`
+	Email       string     `gorm:"column:email;unique;not null" json:"email" binding:"required" validate:"required,email"`
+	PhoneNumber string     `gorm:"column:phone_number;unique;not null" json:"phone_number" binding:"required" validate:"required,e164"`
+	Address     string     `gorm:"column:address" json:"address" binding:"required" validate:"max=100"`
+	Role        AccessType `gorm:"column:access_type,type:tinyint;not null"`
 }
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Email string `json:"email"`
+	Jwt   string `json:"jwt"`
+}
+
+type AccessType uint8
+
+const (
+	NormalUser AccessType = iota
+	Admin
+)

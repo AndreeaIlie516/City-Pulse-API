@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -19,10 +18,6 @@ type DbConfig struct {
 }
 
 func loadEnvDb() DbConfig {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
