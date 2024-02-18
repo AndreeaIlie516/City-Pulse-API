@@ -1,6 +1,7 @@
 package main
 
 import (
+	"City-Pulse-API/database"
 	"City-Pulse-API/domain/entities"
 	"City-Pulse-API/domain/services"
 	"City-Pulse-API/infrastructure/dataaccess"
@@ -9,19 +10,12 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {
 	router := gin.Default()
 
-	dsn := "host=localhost user=postgres password=postgres dbname=CityPulse port=5433 sslmode=disable TimeZone=Europe/Bucharest"
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %s", err.Error())
-	}
+	db := database.ConnectDB()
 
 	entitiesToMigrate := []interface{}{
 		&entities.Genre{},
@@ -76,7 +70,7 @@ func main() {
 	routes.RegisterLocationRoutes(router, &locationController)
 	routes.RegisterUserRoutes(router, &userController)
 
-	err = router.Run("localhost:8080")
+	err := router.Run("localhost:8080")
 	if err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 		return
