@@ -62,10 +62,6 @@ func (rm AuthMiddleware) RequireRole(requiredRole entities.AccessType) gin.Handl
 			c.Set("userID", claims["userID"])
 			c.Set("role", role)
 
-			// Log the values of userID and role for debugging
-			fmt.Println("UserID:", claims["userID"])
-			fmt.Println("Role:", role)
-
 			c.Next()
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})

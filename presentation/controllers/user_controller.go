@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -27,12 +28,12 @@ func (controller *UserController) AllUsers(c *gin.Context) {
 
 func (controller *UserController) UserByID(c *gin.Context) {
 	requestedID := c.Param("id")
-	userID, _ := c.Get("userID")
+	userIDInterface, _ := c.Get("userID")
 	role, _ := c.Get("role")
 
-	// Log the values of userID and role for debugging
-	fmt.Println("UserID:", userID)
-	fmt.Println("Role:", role)
+	fmt.Println("Type of userIDInterface:", reflect.TypeOf(userIDInterface))
+	fmt.Println("userIDInterface:", userIDInterface)
+	userIDFloat, _ := userIDInterface.(float64)
 
 	var reqID uint
 	_, err := fmt.Sscan(requestedID, &reqID)
@@ -41,16 +42,13 @@ func (controller *UserController) UserByID(c *gin.Context) {
 		return
 	}
 
-	if role == entities.NormalUser && userID != reqID {
-		// Log the values of role and userID for debugging
-		fmt.Println("Access denied - Role:", role, "UserID:", userID, "ReqID:", reqID)
+	if role == entities.NormalUser && uint(userIDFloat) != reqID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
 
 	user, err := controller.Service.UserByID(requestedID)
 	if err != nil {
-		// Log the error for debugging
 		fmt.Println("Error fetching user:", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
