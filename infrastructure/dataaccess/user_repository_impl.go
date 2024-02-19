@@ -119,6 +119,12 @@ func (r *GormUserRepository) UpdateUser(id uint, updatedUser entities.User) (ent
 		return entities.User{}, err
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updatedUser.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return entities.User{}, err
+	}
+	updatedUser.Password = string(hashedPassword)
+
 	if err := r.Db.Model(&user).Updates(updatedUser).Error; err != nil {
 		return entities.User{}, err
 	}

@@ -55,7 +55,7 @@ func (rm AuthMiddleware) RequireRole(requiredRole entities.AccessType) gin.Handl
 			role := entities.AccessType(roleFloat)
 
 			if requiredRole != entities.NormalUser && role != requiredRole {
-				c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 				c.Abort()
 				return
 			}

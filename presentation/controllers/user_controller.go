@@ -6,11 +6,9 @@ import (
 	"City-Pulse-API/utils"
 	"errors"
 	"fmt"
-	"net/http"
-	"reflect"
-
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"net/http"
 )
 
 type UserController struct {
@@ -31,8 +29,6 @@ func (controller *UserController) UserByID(c *gin.Context) {
 	userIDInterface, _ := c.Get("userID")
 	role, _ := c.Get("role")
 
-	fmt.Println("Type of userIDInterface:", reflect.TypeOf(userIDInterface))
-	fmt.Println("userIDInterface:", userIDInterface)
 	userIDFloat, _ := userIDInterface.(float64)
 
 	var reqID uint
@@ -129,9 +125,25 @@ func (controller *UserController) Login(c *gin.Context) {
 }
 
 func (controller *UserController) DeleteUser(c *gin.Context) {
-	id := c.Param("id")
+	requestedID := c.Param("id")
+	userIDInterface, _ := c.Get("userID")
+	role, _ := c.Get("role")
 
-	user, err := controller.Service.DeleteUser(id)
+	userIDFloat, _ := userIDInterface.(float64)
+
+	var reqID uint
+	_, err := fmt.Sscan(requestedID, &reqID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	if role == entities.NormalUser && uint(userIDFloat) != reqID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
+	user, err := controller.Service.DeleteUser(requestedID)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
@@ -142,7 +154,23 @@ func (controller *UserController) DeleteUser(c *gin.Context) {
 }
 
 func (controller *UserController) UpdateUser(c *gin.Context) {
-	id := c.Param("id")
+	requestedID := c.Param("id")
+	userIDInterface, _ := c.Get("userID")
+	role, _ := c.Get("role")
+
+	userIDFloat, _ := userIDInterface.(float64)
+
+	var reqID uint
+	_, err := fmt.Sscan(requestedID, &reqID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	if role == entities.NormalUser && uint(userIDFloat) != reqID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
 
 	var updatedUser entities.User
 
@@ -170,7 +198,7 @@ func (controller *UserController) UpdateUser(c *gin.Context) {
 		}
 	}
 
-	err := validate.Struct(updatedUser)
+	err = validate.Struct(updatedUser)
 
 	if err != nil {
 
@@ -193,7 +221,7 @@ func (controller *UserController) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	user, err := controller.Service.UpdateUser(id, updatedUser)
+	user, err := controller.Service.UpdateUser(requestedID, updatedUser)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
