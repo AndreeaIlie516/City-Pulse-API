@@ -8,7 +8,8 @@ import (
 )
 
 type UserService struct {
-	Repo repositories.UserRepository
+	Repo               repositories.UserRepository
+	FavouriteEventRepo repositories.FavouriteEventRepository
 }
 
 func (service *UserService) AllUsers() ([]entities.User, error) {
@@ -53,6 +54,11 @@ func (service *UserService) DeleteUser(idStr string) (entities.User, error) {
 	var id uint
 	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
 		return entities.User{}, errors.New("invalid ID format")
+	}
+
+	_, err := service.FavouriteEventRepo.DeleteUserFromItsEvents(id)
+	if err != nil {
+		return entities.User{}, err
 	}
 
 	user, err := service.Repo.DeleteUser(id)

@@ -8,10 +8,11 @@ import (
 )
 
 type EventService struct {
-	Repo            repositories.EventRepository
-	LocationRepo    repositories.LocationRepository
-	CityRepo        repositories.CityRepository
-	EventArtistRepo repositories.EventArtistRepository
+	Repo               repositories.EventRepository
+	LocationRepo       repositories.LocationRepository
+	CityRepo           repositories.CityRepository
+	EventArtistRepo    repositories.EventArtistRepository
+	FavouriteEventRepo repositories.FavouriteEventRepository
 }
 
 type EventDetails struct {
@@ -160,6 +161,12 @@ func (service *EventService) DeleteEvent(idStr string) (entities.Event, error) {
 	if err != nil {
 		return entities.Event{}, err
 	}
+
+	_, err = service.FavouriteEventRepo.DeleteEventFromItsUsers(id)
+	if err != nil {
+		return entities.Event{}, err
+	}
+
 	event, err := service.Repo.DeleteEvent(id)
 	if err != nil {
 		return entities.Event{}, err
@@ -174,40 +181,6 @@ func (service *EventService) UpdateEvent(idStr string, event entities.Event) (en
 	}
 
 	event, err := service.Repo.UpdateEvent(id, event)
-	if err != nil {
-		return entities.Event{}, err
-	}
-	return event, nil
-}
-
-func (service *EventService) FavouriteEvents() ([]entities.Event, error) {
-	favouriteEvents, err := service.Repo.FavouriteEvents()
-	if err != nil {
-		return nil, err
-	}
-	return favouriteEvents, nil
-}
-
-func (service *EventService) AddEventToFavourites(idStr string) (entities.Event, error) {
-	var id uint
-	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
-		return entities.Event{}, errors.New("invalid ID format")
-	}
-
-	event, err := service.Repo.AddEventToFavourites(id)
-	if err != nil {
-		return entities.Event{}, err
-	}
-	return event, nil
-}
-
-func (service *EventService) DeleteEventFromFavourites(idStr string) (entities.Event, error) {
-	var id uint
-	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
-		return entities.Event{}, errors.New("invalid ID format")
-	}
-
-	event, err := service.Repo.DeleteEventFromFavourites(id)
 	if err != nil {
 		return entities.Event{}, err
 	}
